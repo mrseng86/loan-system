@@ -56,6 +56,8 @@ loan-management-system/
 - Loan amount, interest, tenure
 - Installment auto calculation
 - Total payable and balance calculation
+- Schedule mode with monthly breakdown:
+  opening balance, principal paid, interest paid, service charge, stamp duty, total payment, closing balance
 
 4. Repayment system
 - Record repayment
@@ -144,6 +146,7 @@ npm.cmd run test
 - `PUT /api/customers/{id}`
 - `GET/POST /api/loans`
 - `GET /api/loans/{id}`
+- `GET /api/loans/{id}/schedule`
 - `GET/POST /api/repayments`
 - `GET/POST /api/collections`
 - `GET /api/dashboard/stats`

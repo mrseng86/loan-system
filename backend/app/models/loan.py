@@ -24,6 +24,9 @@ class Loan(Base):
 
     loan_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     interest_rate: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False)
+    monthly_interest_rate: Mapped[Decimal] = mapped_column(Numeric(8, 4), nullable=False, default=0)
+    service_charge_rate: Mapped[Decimal] = mapped_column(Numeric(8, 4), nullable=False, default=0)
+    stamp_duty_rate: Mapped[Decimal] = mapped_column(Numeric(8, 4), nullable=False, default=0)
     tenure_months: Mapped[int] = mapped_column(Integer, nullable=False)
     installment_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
 

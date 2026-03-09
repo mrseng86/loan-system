@@ -9,8 +9,8 @@ from app.db.session import get_db
 from app.models.customer import Customer
 from app.models.loan import Loan, LoanStatus
 from app.models.user import User, UserRole
-from app.schemas.loan import LoanCreate, LoanRead
-from app.services.loan_service import refresh_overdue_status, set_initial_loan_values
+from app.schemas.loan import LoanCreate, LoanRead, LoanSchedule
+from app.services.loan_service import build_loan_schedule, refresh_overdue_status, set_initial_loan_values
 
 router = APIRouter(prefix="/loans", tags=["loans"])
 
@@ -30,8 +30,13 @@ def create_loan(
         created_by=current_user.id,
         loan_amount=payload.loan_amount,
         interest_rate=payload.interest_rate,
+        monthly_interest_rate=payload.monthly_interest_rate
+        if payload.monthly_interest_rate is not None
+        else (payload.interest_rate / Decimal(payload.tenure_months)),
+        service_charge_rate=payload.service_charge_rate,
+        stamp_duty_rate=payload.stamp_duty_rate,
         tenure_months=payload.tenure_months,
-        installment_amount=Decimal("0.00"),
+        installment_amount=payload.installment_amount or Decimal("0.00"),
         total_payable=Decimal("0.00"),
         total_paid=Decimal("0.00"),
         current_balance=Decimal("0.00"),
@@ -68,3 +73,11 @@ def get_loan(loan_id: int, db: Session = Depends(get_db), _: User = Depends(get_
     db.commit()
     db.refresh(loan)
     return loan
+
+
+@router.get("/{loan_id}/schedule", response_model=LoanSchedule)
+def get_loan_schedule(loan_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+    loan = db.query(Loan).filter(Loan.id == loan_id).first()
+    if not loan:
+        raise HTTPException(status_code=404, detail="Loan not found")
+    return build_loan_schedule(loan)

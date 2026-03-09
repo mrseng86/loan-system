@@ -10,7 +10,11 @@ class LoanCreate(BaseModel):
     customer_id: int
     loan_amount: Decimal
     interest_rate: Decimal
+    monthly_interest_rate: Decimal | None = None
+    service_charge_rate: Decimal = Decimal("0")
+    stamp_duty_rate: Decimal = Decimal("0")
     tenure_months: int
+    installment_amount: Decimal | None = None
     disbursed_at: date
 
 
@@ -20,6 +24,9 @@ class LoanRead(BaseModel):
     created_by: int
     loan_amount: Decimal
     interest_rate: Decimal
+    monthly_interest_rate: Decimal
+    service_charge_rate: Decimal
+    stamp_duty_rate: Decimal
     tenure_months: int
     installment_amount: Decimal
     total_payable: Decimal
@@ -35,3 +42,29 @@ class LoanRead(BaseModel):
 
 class LoanListItem(LoanRead):
     customer_name: str
+
+
+class LoanScheduleRow(BaseModel):
+    period: int
+    month: str
+    payment_date: date
+    opening_balance: Decimal
+    principal_paid: Decimal
+    interest_paid: Decimal
+    service_charge: Decimal
+    stamp_duty: Decimal
+    total_payment: Decimal
+    closing_balance: Decimal
+    cumulative_interest: Decimal
+
+
+class LoanSchedule(BaseModel):
+    loan_id: int
+    loan_date: date
+    tenure_months: int
+    opening_total: Decimal
+    installment_amount: Decimal
+    monthly_interest_rate: Decimal
+    service_charge_rate: Decimal
+    stamp_duty_rate: Decimal
+    rows: list[LoanScheduleRow]
