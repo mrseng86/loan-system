@@ -11,15 +11,18 @@ const initialForm = {
 function RepaymentsPage() {
   const [repayments, setRepayments] = useState([]);
   const [loans, setLoans] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [form, setForm] = useState(initialForm);
 
   const loadData = async () => {
-    const [repaymentsRes, loansRes] = await Promise.all([
+    const [repaymentsRes, loansRes, customersRes] = await Promise.all([
       api.get("/repayments"),
       api.get("/loans"),
+      api.get("/customers"),
     ]);
     setRepayments(repaymentsRes.data);
     setLoans(loansRes.data);
+    setCustomers(customersRes.data);
   };
 
   useEffect(() => {
@@ -38,6 +41,20 @@ function RepaymentsPage() {
     loadData();
   };
 
+  const getCustomerName = (customerId) => {
+    const customer = customers.find((c) => c.id === customerId);
+    return customer ? customer.full_name : `Customer #${customerId}`;
+  };
+
+  const getLoanLabel = (loanId) => {
+    const loan = loans.find((l) => l.id === loanId);
+    if (!loan) {
+      return `Loan #${loanId}`;
+    }
+
+    return `${getCustomerName(loan.customer_id)} - Loan #${loan.id} - Balance ${loan.current_balance}`;
+  };
+
   return (
     <div className="grid page-grid">
       <form className="card" onSubmit={onSubmit}>
@@ -45,7 +62,7 @@ function RepaymentsPage() {
         <select value={form.loan_id} onChange={(e) => setForm({ ...form, loan_id: e.target.value })} required>
           <option value="">Select loan</option>
           {loans.map((l) => (
-            <option key={l.id} value={l.id}>Loan #{l.id} - Balance {l.current_balance}</option>
+            <option key={l.id} value={l.id}>{getLoanLabel(l.id)}</option>
           ))}
         </select>
         <input type="number" step="0.01" placeholder="Amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required />
@@ -64,7 +81,7 @@ function RepaymentsPage() {
             {repayments.map((r) => (
               <tr key={r.id}>
                 <td>{r.id}</td>
-                <td>{r.loan_id}</td>
+                <td>{getLoanLabel(r.loan_id)}</td>
                 <td>{r.amount}</td>
                 <td>{r.method}</td>
                 <td>{new Date(r.paid_at).toLocaleString()}</td>
