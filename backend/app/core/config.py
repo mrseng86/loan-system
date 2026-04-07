@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     seed_default_admin: bool = True
 
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/loan_management"
+    perkeso_check_url: str = "https://eis.perkeso.gov.my/eisportal/insured/appl/check"
+    perkeso_timeout_ms: int = 30000
+    perkeso_headless: bool = True
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

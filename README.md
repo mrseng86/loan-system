@@ -50,6 +50,7 @@ loan-management-system/
 - Add customer
 - Edit customer
 - View customer profiles/list
+- PERKESO / EIS lookup by National ID with automatic employment contribution summary
 
 3. Loan management
 - Create loan account
