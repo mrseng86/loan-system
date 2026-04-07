@@ -78,13 +78,13 @@ function LoansPage() {
         <h3>Loan Accounts</h3>
         <table>
           <thead>
-            <tr><th>ID</th><th>Customer ID</th><th>Amount</th><th>Installment</th><th>Balance</th><th>Status</th><th>Overdue</th><th>Action</th></tr>
+            <tr><th>ID</th><th>Customer Name</th><th>Amount</th><th>Installment</th><th>Balance</th><th>Status</th><th>Overdue</th><th>Action</th></tr>
           </thead>
           <tbody>
             {loans.map((l) => (
               <tr key={l.id}>
                 <td>{l.id}</td>
-                <td>{l.customer_id}</td>
+                <td>{customers.find((c) => c.id === l.customer_id)?.full_name || `Customer #${l.customer_id}`}</td>
                 <td>{l.loan_amount}</td>
                 <td>{l.installment_amount}</td>
                 <td>{l.current_balance}</td>
