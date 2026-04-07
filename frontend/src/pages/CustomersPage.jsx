@@ -23,6 +23,8 @@ function CustomersPage() {
   const [lookupLoading, setLookupLoading] = useState(false);
   const [copyMessage, setCopyMessage] = useState("");
   const [editingId, setEditingId] = useState(null);
+  const [customerActionError, setCustomerActionError] = useState("");
+  const [customerActionMessage, setCustomerActionMessage] = useState("");
 
   const loadCustomers = async () => {
     const { data } = await api.get("/customers");
@@ -35,10 +37,14 @@ function CustomersPage() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
+    setCustomerActionError("");
+    setCustomerActionMessage("");
     if (editingId) {
       await api.put(`/customers/${editingId}`, form);
+      setCustomerActionMessage("Customer updated.");
     } else {
       await api.post("/customers", form);
+      setCustomerActionMessage("Customer created.");
     }
     setForm(initialForm);
     setEditingId(null);
@@ -62,14 +68,22 @@ function CustomersPage() {
       return;
     }
 
-    await api.delete(`/customers/${customer.id}`);
+    setCustomerActionError("");
+    setCustomerActionMessage("");
 
-    if (editingId === customer.id) {
-      setEditingId(null);
-      setForm(initialForm);
+    try {
+      await api.delete(`/customers/${customer.id}`);
+
+      if (editingId === customer.id) {
+        setEditingId(null);
+        setForm(initialForm);
+      }
+
+      setCustomerActionMessage(`Deleted ${customer.full_name}.`);
+      await loadCustomers();
+    } catch (error) {
+      setCustomerActionError(error.response?.data?.detail || "Delete failed. Please try again.");
     }
-
-    loadCustomers();
   };
 
   const onLookup = async (e) => {
@@ -272,6 +286,8 @@ function CustomersPage() {
 
       <div className="card">
         <h3>Customer Profiles</h3>
+        {customerActionMessage ? <p className="muted">{customerActionMessage}</p> : null}
+        {customerActionError ? <p className="error">{customerActionError}</p> : null}
         <table>
           <thead>
             <tr><th>Name</th><th>Phone</th><th>Email</th><th>National ID</th><th>Action</th></tr>
