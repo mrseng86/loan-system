@@ -1,6 +1,6 @@
 from calendar import month_name
 from datetime import date, timedelta
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, ROUND_CEILING, ROUND_HALF_UP
 
 from app.models.loan import Loan, LoanStatus
 from app.schemas.loan import LoanSchedule, LoanScheduleRow
@@ -10,6 +10,15 @@ TWOPLACES = Decimal("0.01")
 
 def quantize_amount(value: Decimal) -> Decimal:
     return value.quantize(TWOPLACES, rounding=ROUND_HALF_UP)
+
+
+def round_up_to_next_10(value: Decimal) -> Decimal:
+    if value <= 0:
+        return Decimal("0.00")
+    return ((value / Decimal("10")).quantize(Decimal("1"), rounding=ROUND_CEILING) * Decimal("10")).quantize(
+        TWOPLACES,
+        rounding=ROUND_HALF_UP,
+    )
 
 
 def calculate_total_payable(loan_amount: Decimal, interest_rate: Decimal) -> Decimal:
@@ -23,9 +32,22 @@ def calculate_installment(total_payable: Decimal, tenure_months: int) -> Decimal
 
 
 def set_initial_loan_values(loan: Loan) -> Loan:
-    loan.total_payable = calculate_total_payable(loan.loan_amount, loan.interest_rate)
+    service_charge_amount = quantize_amount(loan.loan_amount * Decimal(loan.service_charge_rate) / Decimal("100"))
+    stamp_duty_amount = quantize_amount(loan.loan_amount * Decimal(loan.stamp_duty_rate) / Decimal("100"))
+    financed_amount = quantize_amount(loan.loan_amount + service_charge_amount + stamp_duty_amount)
+
+    monthly_interest_rate = Decimal(loan.monthly_interest_rate)
+    monthly_interest_amount = quantize_amount(financed_amount * monthly_interest_rate / Decimal("100"))
+    total_interest_amount = quantize_amount(monthly_interest_amount * Decimal(loan.tenure_months))
+    raw_total_payable = quantize_amount(financed_amount + total_interest_amount)
+
+    loan.interest_rate = quantize_amount(monthly_interest_rate * Decimal(loan.tenure_months))
+
     if not loan.installment_amount or loan.installment_amount <= 0:
-        loan.installment_amount = calculate_installment(loan.total_payable, loan.tenure_months)
+        raw_installment = quantize_amount(raw_total_payable / Decimal(loan.tenure_months))
+        loan.installment_amount = round_up_to_next_10(raw_installment)
+
+    loan.total_payable = quantize_amount(loan.installment_amount * Decimal(loan.tenure_months))
     loan.total_paid = Decimal("0.00")
     loan.current_balance = loan.total_payable
     loan.next_due_date = loan.disbursed_at + timedelta(days=30)
@@ -57,11 +79,15 @@ def refresh_overdue_status(loan: Loan, today: date | None = None) -> Loan:
 
 
 def build_loan_schedule(loan: Loan) -> LoanSchedule:
-    opening_balance = quantize_amount(Decimal(loan.total_payable))
+    service_charge_amount = quantize_amount(Decimal(loan.loan_amount) * Decimal(loan.service_charge_rate) / Decimal("100"))
+    stamp_duty_amount = quantize_amount(Decimal(loan.loan_amount) * Decimal(loan.stamp_duty_rate) / Decimal("100"))
+    financed_amount = quantize_amount(Decimal(loan.loan_amount) + service_charge_amount + stamp_duty_amount)
+    opening_balance = quantize_amount(Decimal(loan.installment_amount) * Decimal(loan.tenure_months))
     installment = quantize_amount(Decimal(loan.installment_amount))
     monthly_interest_rate = Decimal(loan.monthly_interest_rate)
     service_charge_rate = Decimal(loan.service_charge_rate)
     stamp_duty_rate = Decimal(loan.stamp_duty_rate)
+    flat_interest_paid = quantize_amount(financed_amount * monthly_interest_rate / Decimal("100"))
 
     rows: list[LoanScheduleRow] = []
     cumulative_interest = Decimal("0.00")
@@ -71,9 +97,9 @@ def build_loan_schedule(loan: Loan) -> LoanSchedule:
         if running_balance <= 0:
             break
 
-        interest_paid = quantize_amount(running_balance * monthly_interest_rate / Decimal("100"))
-        service_charge = quantize_amount(running_balance * service_charge_rate / Decimal("100"))
-        stamp_duty = quantize_amount(running_balance * stamp_duty_rate / Decimal("100"))
+        interest_paid = flat_interest_paid
+        service_charge = Decimal("0.00")
+        stamp_duty = Decimal("0.00")
         charges = interest_paid + service_charge + stamp_duty
 
         principal_paid = quantize_amount(installment - charges)
@@ -103,10 +129,55 @@ def build_loan_schedule(loan: Loan) -> LoanSchedule:
                 total_payment=total_payment,
                 closing_balance=closing_balance,
                 cumulative_interest=cumulative_interest,
+                paid_amount=Decimal("0.00"),
+                actual_payment_date=None,
+                installment_status="pending",
             )
         )
 
         running_balance = closing_balance
+
+    repayments = sorted(loan.repayments, key=lambda repayment: repayment.paid_at)
+    repayment_index = 0
+    remaining_repayment_amount = (
+        quantize_amount(Decimal(repayments[0].amount)) if repayments else Decimal("0.00")
+    )
+
+    for row in rows:
+        due_amount = quantize_amount(Decimal(row.total_payment))
+        allocated = Decimal("0.00")
+        completed_on = None
+
+        while due_amount > 0 and repayment_index < len(repayments):
+            if remaining_repayment_amount <= 0:
+                repayment_index += 1
+                if repayment_index >= len(repayments):
+                    break
+                remaining_repayment_amount = quantize_amount(Decimal(repayments[repayment_index].amount))
+                continue
+
+            allocation = min(due_amount, remaining_repayment_amount)
+            allocated = quantize_amount(allocated + allocation)
+            due_amount = quantize_amount(due_amount - allocation)
+            remaining_repayment_amount = quantize_amount(remaining_repayment_amount - allocation)
+
+            if due_amount == Decimal("0.00"):
+                completed_on = repayments[repayment_index].paid_at.date()
+
+        row.paid_amount = allocated
+        row.actual_payment_date = completed_on
+
+        if allocated >= row.total_payment:
+            row.installment_status = "paid"
+        elif allocated > Decimal("0.00"):
+            row.installment_status = "partial"
+        elif row.payment_date < date.today():
+            row.installment_status = "overdue"
+        else:
+            row.installment_status = "pending"
+
+    periods_paid = sum(1 for row in rows if row.installment_status == "paid")
+    periods_remaining = max(len(rows) - periods_paid, 0)
 
     return LoanSchedule(
         loan_id=loan.id,
@@ -117,5 +188,7 @@ def build_loan_schedule(loan: Loan) -> LoanSchedule:
         monthly_interest_rate=quantize_amount(monthly_interest_rate),
         service_charge_rate=quantize_amount(service_charge_rate),
         stamp_duty_rate=quantize_amount(stamp_duty_rate),
+        periods_paid=periods_paid,
+        periods_remaining=periods_remaining,
         rows=rows,
     )

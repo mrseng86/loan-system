@@ -58,6 +58,7 @@ function LoansPage() {
     <div className="grid page-grid">
       <form className="card" onSubmit={onSubmit}>
         <h3>Create Loan (Schedule Mode)</h3>
+        <p className="muted">Formula: amount + service/stamp, flat monthly interest, then monthly payment rounds up to the next 10.</p>
         <select value={form.customer_id} onChange={(e) => setForm({ ...form, customer_id: e.target.value })} required>
           <option value="">Select customer</option>
           {customers.map((c) => (
@@ -65,10 +66,10 @@ function LoansPage() {
           ))}
         </select>
         <input type="number" step="0.01" placeholder="Loan amount" value={form.loan_amount} onChange={(e) => setForm({ ...form, loan_amount: e.target.value })} required />
-        <input type="number" step="0.01" placeholder="Total interest % (legacy)" value={form.interest_rate} onChange={(e) => setForm({ ...form, interest_rate: e.target.value })} required />
-        <input type="number" step="0.0001" placeholder="Monthly interest %" value={form.monthly_interest_rate} onChange={(e) => setForm({ ...form, monthly_interest_rate: e.target.value })} />
-        <input type="number" step="0.0001" placeholder="Service charge % / month" value={form.service_charge_rate} onChange={(e) => setForm({ ...form, service_charge_rate: e.target.value })} />
-        <input type="number" step="0.0001" placeholder="Stamp duty % / month" value={form.stamp_duty_rate} onChange={(e) => setForm({ ...form, stamp_duty_rate: e.target.value })} />
+        <input type="number" step="0.01" placeholder="Total interest % (optional)" value={form.interest_rate} onChange={(e) => setForm({ ...form, interest_rate: e.target.value })} />
+        <input type="number" step="0.0001" placeholder="Monthly interest % (example: 3)" value={form.monthly_interest_rate} onChange={(e) => setForm({ ...form, monthly_interest_rate: e.target.value })} />
+        <input type="number" step="0.0001" placeholder="Service charge % (one-time)" value={form.service_charge_rate} onChange={(e) => setForm({ ...form, service_charge_rate: e.target.value })} />
+        <input type="number" step="0.0001" placeholder="Stamp duty % (one-time)" value={form.stamp_duty_rate} onChange={(e) => setForm({ ...form, stamp_duty_rate: e.target.value })} />
         <input type="number" placeholder="Tenure (months)" value={form.tenure_months} onChange={(e) => setForm({ ...form, tenure_months: e.target.value })} required />
         <input type="number" step="0.01" placeholder="Monthly payment (optional override)" value={form.installment_amount} onChange={(e) => setForm({ ...form, installment_amount: e.target.value })} />
         <input type="date" value={form.disbursed_at} onChange={(e) => setForm({ ...form, disbursed_at: e.target.value })} required />
@@ -106,11 +107,15 @@ function LoansPage() {
             Payment: {schedule.installment_amount} | Monthly Interest: {schedule.monthly_interest_rate}% |
             Service: {schedule.service_charge_rate}% | Stamp: {schedule.stamp_duty_rate}%
           </p>
+          <p>
+            Periods Paid: {schedule.periods_paid} | Periods Remaining: {schedule.periods_remaining}
+          </p>
           <table>
             <thead>
               <tr>
                 <th>Period</th><th>Month</th><th>Payment Date</th><th>Opening</th><th>Principal</th>
-                <th>Interest</th><th>Service</th><th>Stamp</th><th>Total Payment</th><th>Closing</th><th>Cumulative Interest</th>
+                <th>Interest</th><th>Service</th><th>Stamp</th><th>Total Payment</th><th>Paid Amount</th>
+                <th>Actual Paid Date</th><th>Status</th><th>Closing</th><th>Cumulative Interest</th>
               </tr>
             </thead>
             <tbody>
@@ -125,6 +130,9 @@ function LoansPage() {
                   <td>{r.service_charge}</td>
                   <td>{r.stamp_duty}</td>
                   <td>{r.total_payment}</td>
+                  <td>{r.paid_amount}</td>
+                  <td>{r.actual_payment_date || "-"}</td>
+                  <td>{r.installment_status}</td>
                   <td>{r.closing_balance}</td>
                   <td>{r.cumulative_interest}</td>
                 </tr>

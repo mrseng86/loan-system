@@ -9,7 +9,7 @@ from app.models.loan import LoanStatus
 class LoanCreate(BaseModel):
     customer_id: int
     loan_amount: Decimal
-    interest_rate: Decimal
+    interest_rate: Decimal = Decimal("0")
     monthly_interest_rate: Decimal | None = None
     service_charge_rate: Decimal = Decimal("0")
     stamp_duty_rate: Decimal = Decimal("0")
@@ -56,6 +56,9 @@ class LoanScheduleRow(BaseModel):
     total_payment: Decimal
     closing_balance: Decimal
     cumulative_interest: Decimal
+    paid_amount: Decimal
+    actual_payment_date: date | None = None
+    installment_status: str
 
 
 class LoanSchedule(BaseModel):
@@ -67,4 +70,6 @@ class LoanSchedule(BaseModel):
     monthly_interest_rate: Decimal
     service_charge_rate: Decimal
     stamp_duty_rate: Decimal
+    periods_paid: int
+    periods_remaining: int
     rows: list[LoanScheduleRow]
