@@ -64,6 +64,8 @@ class LoanScheduleRow(BaseModel):
 class LoanSchedule(BaseModel):
     loan_id: int
     loan_date: date
+    principal_amount: Decimal
+    latest_balance: Decimal
     tenure_months: int
     opening_total: Decimal
     installment_amount: Decimal

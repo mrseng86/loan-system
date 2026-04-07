@@ -187,6 +187,8 @@ def build_loan_schedule(loan: Loan) -> LoanSchedule:
     return LoanSchedule(
         loan_id=loan.id,
         loan_date=loan.disbursed_at,
+        principal_amount=quantize_amount(Decimal(loan.loan_amount)),
+        latest_balance=quantize_amount(Decimal(loan.current_balance)),
         tenure_months=loan.tenure_months,
         opening_total=opening_balance,
         installment_amount=installment,

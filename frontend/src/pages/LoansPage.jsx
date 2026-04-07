@@ -106,6 +106,9 @@ function LoansPage() {
             One-time Fee: {Number(schedule.service_charge_rate) + Number(schedule.stamp_duty_rate)}%
           </p>
           <p>
+            Principal: {schedule.principal_amount} | Latest Balance: {schedule.latest_balance}
+          </p>
+          <p>
             Periods Paid: {schedule.periods_paid} | Periods Remaining: {schedule.periods_remaining}
           </p>
           <table>
