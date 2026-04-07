@@ -109,13 +109,16 @@ function LoansPage() {
             Principal: {schedule.principal_amount} | Latest Balance: {schedule.latest_balance}
           </p>
           <p>
+            Arrears: {schedule.arrears_amount} | Next Due Amount: {schedule.next_due_amount}
+          </p>
+          <p>
             Periods Paid: {schedule.periods_paid} | Periods Remaining: {schedule.periods_remaining}
           </p>
           <table>
             <thead>
               <tr>
                 <th>Period</th><th>Month</th><th>Payment Date</th><th>Opening</th><th>Principal</th>
-                <th>Interest</th><th>Service</th><th>Stamp</th><th>Total Payment</th><th>Paid Amount</th>
+                <th>Interest</th><th>Service</th><th>Stamp</th><th>Total Payment</th><th>Paid Amount</th><th>Outstanding</th>
                 <th>Actual Paid Date</th><th>Status</th><th>Closing</th><th>Cumulative Interest</th>
               </tr>
             </thead>
@@ -132,6 +135,7 @@ function LoansPage() {
                   <td>{r.stamp_duty}</td>
                   <td>{r.total_payment}</td>
                   <td>{r.paid_amount}</td>
+                  <td>{r.outstanding_amount}</td>
                   <td>{r.actual_payment_date || "-"}</td>
                   <td>{r.installment_status}</td>
                   <td>{r.closing_balance}</td>

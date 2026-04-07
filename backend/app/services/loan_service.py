@@ -97,6 +97,7 @@ def build_loan_schedule(loan: Loan) -> LoanSchedule:
     rows: list[LoanScheduleRow] = []
     cumulative_interest = Decimal("0.00")
     running_balance = opening_balance
+    today = date.today()
 
     for period in range(1, loan.tenure_months + 1):
         if running_balance <= 0:
@@ -132,6 +133,7 @@ def build_loan_schedule(loan: Loan) -> LoanSchedule:
                 service_charge=service_charge,
                 stamp_duty=stamp_duty,
                 total_payment=total_payment,
+                outstanding_amount=total_payment,
                 closing_balance=closing_balance,
                 cumulative_interest=cumulative_interest,
                 paid_amount=Decimal("0.00"),
@@ -171,24 +173,36 @@ def build_loan_schedule(loan: Loan) -> LoanSchedule:
 
         row.paid_amount = allocated
         row.actual_payment_date = completed_on
+        row.outstanding_amount = quantize_amount(max(Decimal("0.00"), Decimal(row.total_payment) - allocated))
 
-        if allocated >= row.total_payment:
+        if row.outstanding_amount == Decimal("0.00"):
             row.installment_status = "paid"
+        elif row.payment_date < today:
+            row.installment_status = "overdue"
         elif allocated > Decimal("0.00"):
             row.installment_status = "partial"
-        elif row.payment_date < date.today():
-            row.installment_status = "overdue"
         else:
             row.installment_status = "pending"
 
     periods_paid = sum(1 for row in rows if row.installment_status == "paid")
     periods_remaining = max(len(rows) - periods_paid, 0)
+    arrears_amount = quantize_amount(
+        sum((Decimal(row.outstanding_amount) for row in rows if row.payment_date < today and row.outstanding_amount > 0), Decimal("0.00"))
+    )
+
+    next_due_amount = Decimal("0.00")
+    for row in rows:
+        if row.outstanding_amount > 0:
+            next_due_amount = quantize_amount(Decimal(row.outstanding_amount))
+            break
 
     return LoanSchedule(
         loan_id=loan.id,
         loan_date=loan.disbursed_at,
         principal_amount=quantize_amount(Decimal(loan.loan_amount)),
         latest_balance=quantize_amount(Decimal(loan.current_balance)),
+        arrears_amount=arrears_amount,
+        next_due_amount=next_due_amount,
         tenure_months=loan.tenure_months,
         opening_total=opening_balance,
         installment_amount=installment,

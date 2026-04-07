@@ -54,6 +54,7 @@ class LoanScheduleRow(BaseModel):
     service_charge: Decimal
     stamp_duty: Decimal
     total_payment: Decimal
+    outstanding_amount: Decimal
     closing_balance: Decimal
     cumulative_interest: Decimal
     paid_amount: Decimal
@@ -66,6 +67,8 @@ class LoanSchedule(BaseModel):
     loan_date: date
     principal_amount: Decimal
     latest_balance: Decimal
+    arrears_amount: Decimal
+    next_due_amount: Decimal
     tenure_months: int
     opening_total: Decimal
     installment_amount: Decimal
