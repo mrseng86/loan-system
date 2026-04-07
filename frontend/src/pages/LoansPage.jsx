@@ -6,8 +6,7 @@ const initialForm = {
   loan_amount: "",
   interest_rate: "",
   monthly_interest_rate: "",
-  service_charge_rate: "",
-  stamp_duty_rate: "",
+  combined_charge_rate: "",
   tenure_months: "",
   installment_amount: "",
   disbursed_at: "",
@@ -39,8 +38,8 @@ function LoansPage() {
       loan_amount: Number(form.loan_amount),
       interest_rate: Number(form.interest_rate),
       monthly_interest_rate: form.monthly_interest_rate ? Number(form.monthly_interest_rate) : null,
-      service_charge_rate: form.service_charge_rate ? Number(form.service_charge_rate) : 0,
-      stamp_duty_rate: form.stamp_duty_rate ? Number(form.stamp_duty_rate) : 0,
+      service_charge_rate: form.combined_charge_rate ? Number(form.combined_charge_rate) : 0,
+      stamp_duty_rate: 0,
       tenure_months: Number(form.tenure_months),
       installment_amount: form.installment_amount ? Number(form.installment_amount) : null,
       disbursed_at: form.disbursed_at,
@@ -58,7 +57,7 @@ function LoansPage() {
     <div className="grid page-grid">
       <form className="card" onSubmit={onSubmit}>
         <h3>Create Loan (Schedule Mode)</h3>
-        <p className="muted">Formula: amount + one-time charges, flat monthly interest, monthly payment rounds up to next 10, then add fixed 10 every month.</p>
+        <p className="muted">Formula: principal + one-time fee %, then monthly interest, divide by tenure, add fixed 10, then round up to nearest 10.</p>
         <select value={form.customer_id} onChange={(e) => setForm({ ...form, customer_id: e.target.value })} required>
           <option value="">Select customer</option>
           {customers.map((c) => (
@@ -68,8 +67,7 @@ function LoansPage() {
         <input type="number" step="0.01" placeholder="Loan amount" value={form.loan_amount} onChange={(e) => setForm({ ...form, loan_amount: e.target.value })} required />
         <input type="number" step="0.01" placeholder="Total interest % (optional)" value={form.interest_rate} onChange={(e) => setForm({ ...form, interest_rate: e.target.value })} />
         <input type="number" step="0.0001" placeholder="Monthly interest % (example: 3)" value={form.monthly_interest_rate} onChange={(e) => setForm({ ...form, monthly_interest_rate: e.target.value })} />
-        <input type="number" step="0.0001" placeholder="Service charge % (one-time)" value={form.service_charge_rate} onChange={(e) => setForm({ ...form, service_charge_rate: e.target.value })} />
-        <input type="number" step="0.0001" placeholder="Stamp duty % (one-time)" value={form.stamp_duty_rate} onChange={(e) => setForm({ ...form, stamp_duty_rate: e.target.value })} />
+        <input type="number" step="0.0001" placeholder="One-time fee % (service + stamping)" value={form.combined_charge_rate} onChange={(e) => setForm({ ...form, combined_charge_rate: e.target.value })} />
         <input type="number" placeholder="Tenure (months)" value={form.tenure_months} onChange={(e) => setForm({ ...form, tenure_months: e.target.value })} required />
         <input type="number" step="0.01" placeholder="Monthly payment (optional override)" value={form.installment_amount} onChange={(e) => setForm({ ...form, installment_amount: e.target.value })} />
         <input type="date" value={form.disbursed_at} onChange={(e) => setForm({ ...form, disbursed_at: e.target.value })} required />
@@ -105,7 +103,7 @@ function LoansPage() {
           <p>
             Loan Date: {schedule.loan_date} | Tenure: {schedule.tenure_months} months |
             Payment: {schedule.installment_amount} | Monthly Interest: {schedule.monthly_interest_rate}% |
-            Service: {schedule.service_charge_rate}% | Stamp: {schedule.stamp_duty_rate}%
+            One-time Fee: {Number(schedule.service_charge_rate) + Number(schedule.stamp_duty_rate)}%
           </p>
           <p>
             Periods Paid: {schedule.periods_paid} | Periods Remaining: {schedule.periods_remaining}

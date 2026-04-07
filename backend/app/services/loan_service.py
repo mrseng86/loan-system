@@ -49,7 +49,8 @@ def set_initial_loan_values(loan: Loan) -> Loan:
 
     if not loan.installment_amount or loan.installment_amount <= 0:
         raw_installment = quantize_amount(raw_total_payable / Decimal(loan.tenure_months))
-        loan.installment_amount = add_fixed_monthly_service_fee(round_up_to_next_10(raw_installment))
+        installment_with_fixed_fee = add_fixed_monthly_service_fee(raw_installment)
+        loan.installment_amount = round_up_to_next_10(installment_with_fixed_fee)
 
     loan.total_payable = quantize_amount(loan.installment_amount * Decimal(loan.tenure_months))
     loan.total_paid = Decimal("0.00")
