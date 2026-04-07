@@ -21,6 +21,10 @@ def round_up_to_next_10(value: Decimal) -> Decimal:
     )
 
 
+def add_fixed_monthly_service_fee(value: Decimal, fixed_fee: Decimal = Decimal("10.00")) -> Decimal:
+    return quantize_amount(value + fixed_fee)
+
+
 def calculate_total_payable(loan_amount: Decimal, interest_rate: Decimal) -> Decimal:
     return quantize_amount(loan_amount + (loan_amount * interest_rate / Decimal("100")))
 
@@ -45,7 +49,7 @@ def set_initial_loan_values(loan: Loan) -> Loan:
 
     if not loan.installment_amount or loan.installment_amount <= 0:
         raw_installment = quantize_amount(raw_total_payable / Decimal(loan.tenure_months))
-        loan.installment_amount = round_up_to_next_10(raw_installment)
+        loan.installment_amount = add_fixed_monthly_service_fee(round_up_to_next_10(raw_installment))
 
     loan.total_payable = quantize_amount(loan.installment_amount * Decimal(loan.tenure_months))
     loan.total_paid = Decimal("0.00")

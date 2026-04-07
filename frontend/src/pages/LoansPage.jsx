@@ -58,7 +58,7 @@ function LoansPage() {
     <div className="grid page-grid">
       <form className="card" onSubmit={onSubmit}>
         <h3>Create Loan (Schedule Mode)</h3>
-        <p className="muted">Formula: amount + service/stamp, flat monthly interest, then monthly payment rounds up to the next 10.</p>
+        <p className="muted">Formula: amount + one-time charges, flat monthly interest, monthly payment rounds up to next 10, then add fixed 10 every month.</p>
         <select value={form.customer_id} onChange={(e) => setForm({ ...form, customer_id: e.target.value })} required>
           <option value="">Select customer</option>
           {customers.map((c) => (
