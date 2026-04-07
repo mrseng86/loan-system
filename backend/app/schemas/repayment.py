@@ -9,6 +9,7 @@ class RepaymentCreate(BaseModel):
     amount: Decimal
     method: str = "cash"
     note: str | None = None
+    paid_at: datetime | None = None
 
 
 class RepaymentRead(BaseModel):

@@ -6,6 +6,7 @@ const initialForm = {
   amount: "",
   method: "cash",
   note: "",
+  paid_at: "",
 };
 
 function RepaymentsPage() {
@@ -36,6 +37,7 @@ function RepaymentsPage() {
       amount: Number(form.amount),
       method: form.method,
       note: form.note || null,
+      paid_at: form.paid_at || null,
     });
     setForm(initialForm);
     loadData();
@@ -67,6 +69,7 @@ function RepaymentsPage() {
         </select>
         <input type="number" step="0.01" placeholder="Amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required />
         <input placeholder="Method (cash/bank/etc)" value={form.method} onChange={(e) => setForm({ ...form, method: e.target.value })} required />
+        <input type="datetime-local" value={form.paid_at} onChange={(e) => setForm({ ...form, paid_at: e.target.value })} />
         <input placeholder="Note" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
         <button className="btn" type="submit">Save Repayment</button>
       </form>

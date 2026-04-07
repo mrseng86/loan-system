@@ -35,6 +35,7 @@ def record_repayment(
         amount=amount,
         method=payload.method,
         note=payload.note,
+        paid_at=payload.paid_at,
     )
     db.add(repayment)
 
