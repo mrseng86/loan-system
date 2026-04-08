@@ -237,7 +237,7 @@ function LoansPage() {
               <h4>Short-Term Borrowing</h4>
               <table>
                 <thead>
-                  <tr><th>ID</th><th>Principal</th><th>Interest %</th><th>Interest Due</th><th>Total Due</th><th>Interest Paid</th><th>Principal Paid</th><th>Balance</th><th>Due Date</th><th>Status</th><th>Note</th></tr>
+                  <tr><th>ID</th><th>Principal</th><th>Interest %</th><th>Interest Due</th><th>Total Due</th><th>Interest Paid</th><th>Principal Paid</th><th>Interest Balance</th><th>Principal Balance</th><th>Balance</th><th>Due Date</th><th>Status</th><th>Note</th></tr>
                 </thead>
                 <tbody>
                   {visibleShortTermLoans.map((item) => (
@@ -249,6 +249,8 @@ function LoansPage() {
                       <td>{item.total_due}</td>
                       <td>{item.interest_paid}</td>
                       <td>{item.principal_paid}</td>
+                      <td>{(Number(item.interest_due) - Number(item.interest_paid)).toFixed(2)}</td>
+                      <td>{(Number(item.principal_amount) - Number(item.principal_paid)).toFixed(2)}</td>
                       <td>{item.current_balance}</td>
                       <td>{item.due_date}</td>
                       <td>{item.status}</td>
