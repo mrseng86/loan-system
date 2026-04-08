@@ -17,6 +17,8 @@ function LoansPage() {
   const [loans, setLoans] = useState([]);
   const [form, setForm] = useState(initialForm);
   const [schedule, setSchedule] = useState(null);
+  const [loanSearchTerm, setLoanSearchTerm] = useState("");
+  const [scheduleSearchTerm, setScheduleSearchTerm] = useState("");
 
   const loadData = async () => {
     const [customersRes, loansRes] = await Promise.all([
@@ -51,7 +53,47 @@ function LoansPage() {
   const viewSchedule = async (loanId) => {
     const { data } = await api.get(`/loans/${loanId}/schedule`);
     setSchedule(data);
+    setScheduleSearchTerm("");
   };
+
+  const normalizedLoanSearch = loanSearchTerm.trim().toLowerCase();
+  const filteredLoans = loans.filter((loan) => {
+    if (!normalizedLoanSearch) {
+      return true;
+    }
+
+    const customerName = customers.find((customer) => customer.id === loan.customer_id)?.full_name || "";
+
+    return [
+      loan.id,
+      customerName,
+      loan.status,
+      loan.loan_amount,
+      loan.installment_amount,
+      loan.current_balance,
+    ]
+      .filter((value) => value !== null && value !== undefined)
+      .some((value) => String(value).toLowerCase().includes(normalizedLoanSearch));
+  });
+
+  const normalizedScheduleSearch = scheduleSearchTerm.trim().toLowerCase();
+  const filteredScheduleRows = schedule
+    ? schedule.rows.filter((row) => {
+        if (!normalizedScheduleSearch) {
+          return true;
+        }
+
+        return [
+          row.period,
+          row.month,
+          row.payment_date,
+          row.actual_payment_date,
+          row.installment_status,
+        ]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(normalizedScheduleSearch));
+      })
+    : [];
 
   return (
     <div className="grid page-grid">
@@ -75,13 +117,23 @@ function LoansPage() {
       </form>
 
       <div className="card">
-        <h3>Loan Accounts</h3>
+        <div className="section-heading">
+          <div>
+            <h3>Loan Accounts</h3>
+            <p className="muted">Search by customer name, loan ID, status, amount, or balance.</p>
+          </div>
+        </div>
+        <input
+          placeholder="Search loan"
+          value={loanSearchTerm}
+          onChange={(e) => setLoanSearchTerm(e.target.value)}
+        />
         <table>
           <thead>
             <tr><th>ID</th><th>Customer Name</th><th>Amount</th><th>Installment</th><th>Balance</th><th>Status</th><th>Overdue</th><th>Action</th></tr>
           </thead>
           <tbody>
-            {loans.map((l) => (
+            {filteredLoans.map((l) => (
               <tr key={l.id}>
                 <td>{l.id}</td>
                 <td>{customers.find((c) => c.id === l.customer_id)?.full_name || `Customer #${l.customer_id}`}</td>
@@ -93,6 +145,11 @@ function LoansPage() {
                 <td><button className="btn small" onClick={() => viewSchedule(l.id)}>Schedule</button></td>
               </tr>
             ))}
+            {!filteredLoans.length ? (
+              <tr>
+                <td colSpan="8" className="muted">No loan matched your search.</td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </div>
@@ -114,6 +171,11 @@ function LoansPage() {
           <p>
             Periods Paid: {schedule.periods_paid} | Periods Remaining: {schedule.periods_remaining}
           </p>
+          <input
+            placeholder="Search schedule row"
+            value={scheduleSearchTerm}
+            onChange={(e) => setScheduleSearchTerm(e.target.value)}
+          />
           <table>
             <thead>
               <tr>
@@ -123,7 +185,7 @@ function LoansPage() {
               </tr>
             </thead>
             <tbody>
-              {schedule.rows.map((r) => (
+              {filteredScheduleRows.map((r) => (
                 <tr key={r.period}>
                   <td>{r.period}</td>
                   <td>{r.month}</td>
@@ -142,6 +204,11 @@ function LoansPage() {
                   <td>{r.cumulative_interest}</td>
                 </tr>
               ))}
+              {!filteredScheduleRows.length ? (
+                <tr>
+                  <td colSpan="15" className="muted">No schedule row matched your search.</td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </div>
