@@ -16,6 +16,7 @@ const initialLookupForm = {
 
 function CustomersPage() {
   const [customers, setCustomers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [form, setForm] = useState(initialForm);
   const [lookupForm, setLookupForm] = useState(initialLookupForm);
   const [lookupResult, setLookupResult] = useState(null);
@@ -135,6 +136,21 @@ function CustomersPage() {
   };
 
   const latestRecord = lookupResult?.records?.[0] || null;
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filteredCustomers = customers.filter((customer) => {
+    if (!normalizedSearch) {
+      return true;
+    }
+
+    return [
+      customer.full_name,
+      customer.phone,
+      customer.email,
+      customer.national_id,
+    ]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(normalizedSearch));
+  });
 
   const copyLookupJson = async () => {
     if (!lookupResult) {
@@ -301,15 +317,25 @@ function CustomersPage() {
       ) : null}
 
       <div className="card">
-        <h3>Customer Profiles</h3>
+        <div className="section-heading">
+          <div>
+            <h3>Customer Profiles</h3>
+            <p className="muted">Search by customer name, phone, email, or national ID.</p>
+          </div>
+        </div>
         {customerActionMessage ? <p className="muted">{customerActionMessage}</p> : null}
         {customerActionError ? <p className="error">{customerActionError}</p> : null}
+        <input
+          placeholder="Search customer"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
         <table>
           <thead>
             <tr><th>Name</th><th>Phone</th><th>Email</th><th>National ID</th><th>Action</th></tr>
           </thead>
           <tbody>
-            {customers.map((c) => (
+            {filteredCustomers.map((c) => (
               <tr key={c.id}>
                 <td>{c.full_name}</td>
                 <td>{c.phone}</td>
@@ -323,6 +349,11 @@ function CustomersPage() {
                 </td>
               </tr>
             ))}
+            {!filteredCustomers.length ? (
+              <tr>
+                <td colSpan="5" className="muted">No customer matched your search.</td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </div>
