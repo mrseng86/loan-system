@@ -3,7 +3,8 @@ from datetime import date, timedelta
 from decimal import Decimal, ROUND_CEILING, ROUND_HALF_UP
 
 from app.models.loan import Loan, LoanStatus
-from app.schemas.loan import LoanSchedule, LoanScheduleRow
+from app.models.short_term_loan import ShortTermLoanStatus
+from app.schemas.loan import LoanSchedule, LoanScheduleRow, ShortTermLoanSummary
 
 TWOPLACES = Decimal("0.01")
 
@@ -196,8 +197,31 @@ def build_loan_schedule(loan: Loan) -> LoanSchedule:
             next_due_amount = quantize_amount(Decimal(row.outstanding_amount))
             break
 
+    customer = loan.customer
+    short_term_loans = [
+        ShortTermLoanSummary(
+            id=short_term_loan.id,
+            customer_id=short_term_loan.customer_id,
+            principal_amount=quantize_amount(Decimal(short_term_loan.principal_amount)),
+            interest_rate=quantize_amount(Decimal(short_term_loan.interest_rate)),
+            interest_due=quantize_amount(Decimal(short_term_loan.interest_due)),
+            total_due=quantize_amount(Decimal(short_term_loan.total_due)),
+            principal_paid=quantize_amount(Decimal(short_term_loan.principal_paid)),
+            interest_paid=quantize_amount(Decimal(short_term_loan.interest_paid)),
+            current_balance=quantize_amount(Decimal(short_term_loan.current_balance)),
+            disbursed_at=short_term_loan.disbursed_at,
+            due_date=short_term_loan.due_date,
+            status=short_term_loan.status.value if isinstance(short_term_loan.status, ShortTermLoanStatus) else str(short_term_loan.status),
+            note=short_term_loan.note,
+        )
+        for short_term_loan in sorted(customer.short_term_loans, key=lambda item: item.id, reverse=True)
+        if Decimal(short_term_loan.current_balance) > Decimal("0.00") or short_term_loan.status == ShortTermLoanStatus.settled
+    ]
+
     return LoanSchedule(
         loan_id=loan.id,
+        customer_id=loan.customer_id,
+        customer_name=customer.full_name if customer else f"Customer #{loan.customer_id}",
         loan_date=loan.disbursed_at,
         principal_amount=quantize_amount(Decimal(loan.loan_amount)),
         latest_balance=quantize_amount(Decimal(loan.current_balance)),
@@ -211,5 +235,6 @@ def build_loan_schedule(loan: Loan) -> LoanSchedule:
         stamp_duty_rate=quantize_amount(stamp_duty_rate),
         periods_paid=periods_paid,
         periods_remaining=periods_remaining,
+        short_term_loans=short_term_loans,
         rows=rows,
     )

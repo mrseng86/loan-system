@@ -19,3 +19,4 @@ class Customer(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     loans = relationship("Loan", back_populates="customer", cascade="all, delete-orphan")
+    short_term_loans = relationship("ShortTermLoan", back_populates="customer", cascade="all, delete-orphan")

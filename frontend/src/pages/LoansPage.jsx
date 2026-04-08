@@ -12,21 +12,36 @@ const initialForm = {
   disbursed_at: "",
 };
 
+const initialShortTermForm = {
+  customer_id: "",
+  principal_amount: "",
+  interest_rate: "",
+  disbursed_at: "",
+  due_date: "",
+  note: "",
+};
+
 function LoansPage() {
   const [customers, setCustomers] = useState([]);
   const [loans, setLoans] = useState([]);
+  const [shortTermLoans, setShortTermLoans] = useState([]);
   const [form, setForm] = useState(initialForm);
+  const [shortTermForm, setShortTermForm] = useState(initialShortTermForm);
   const [schedule, setSchedule] = useState(null);
   const [loanSearchTerm, setLoanSearchTerm] = useState("");
   const [scheduleSearchTerm, setScheduleSearchTerm] = useState("");
+  const [shortTermMessage, setShortTermMessage] = useState("");
+  const [shortTermError, setShortTermError] = useState("");
 
   const loadData = async () => {
-    const [customersRes, loansRes] = await Promise.all([
+    const [customersRes, loansRes, shortTermLoansRes] = await Promise.all([
       api.get("/customers"),
       api.get("/loans"),
+      api.get("/short-term-loans"),
     ]);
     setCustomers(customersRes.data);
     setLoans(loansRes.data);
+    setShortTermLoans(shortTermLoansRes.data);
   };
 
   useEffect(() => {
@@ -54,6 +69,28 @@ function LoansPage() {
     const { data } = await api.get(`/loans/${loanId}/schedule`);
     setSchedule(data);
     setScheduleSearchTerm("");
+  };
+
+  const onShortTermSubmit = async (e) => {
+    e.preventDefault();
+    setShortTermMessage("");
+    setShortTermError("");
+
+    try {
+      await api.post("/short-term-loans", {
+        customer_id: Number(shortTermForm.customer_id),
+        principal_amount: Number(shortTermForm.principal_amount),
+        interest_rate: Number(shortTermForm.interest_rate),
+        disbursed_at: shortTermForm.disbursed_at,
+        due_date: shortTermForm.due_date,
+        note: shortTermForm.note.trim() || null,
+      });
+      setShortTermForm(initialShortTermForm);
+      setShortTermMessage("Short-term borrowing created.");
+      await loadData();
+    } catch (error) {
+      setShortTermError(error.response?.data?.detail || "Unable to save short-term borrowing.");
+    }
   };
 
   const normalizedLoanSearch = loanSearchTerm.trim().toLowerCase();
@@ -94,27 +131,51 @@ function LoansPage() {
           .some((value) => String(value).toLowerCase().includes(normalizedScheduleSearch));
       })
     : [];
+  const visibleShortTermLoans = schedule
+    ? shortTermLoans.filter((loan) => loan.customer_id === schedule.customer_id)
+    : [];
 
   return (
     <div className="grid page-grid">
-      <form className="card" onSubmit={onSubmit}>
-        <h3>Create Loan (Schedule Mode)</h3>
-        <p className="muted">Formula: principal + one-time fee %, then monthly interest, divide by tenure, add fixed 10, then round up to nearest 10.</p>
-        <select value={form.customer_id} onChange={(e) => setForm({ ...form, customer_id: e.target.value })} required>
-          <option value="">Select customer</option>
-          {customers.map((c) => (
-            <option key={c.id} value={c.id}>{c.full_name}</option>
-          ))}
-        </select>
-        <input type="number" step="0.01" placeholder="Loan amount" value={form.loan_amount} onChange={(e) => setForm({ ...form, loan_amount: e.target.value })} required />
-        <input type="number" step="0.01" placeholder="Total interest % (optional)" value={form.interest_rate} onChange={(e) => setForm({ ...form, interest_rate: e.target.value })} />
-        <input type="number" step="0.0001" placeholder="Monthly interest % (example: 3)" value={form.monthly_interest_rate} onChange={(e) => setForm({ ...form, monthly_interest_rate: e.target.value })} />
-        <input type="number" step="0.0001" placeholder="One-time fee % (service + stamping)" value={form.combined_charge_rate} onChange={(e) => setForm({ ...form, combined_charge_rate: e.target.value })} />
-        <input type="number" placeholder="Tenure (months)" value={form.tenure_months} onChange={(e) => setForm({ ...form, tenure_months: e.target.value })} required />
-        <input type="number" step="0.01" placeholder="Monthly payment (optional override)" value={form.installment_amount} onChange={(e) => setForm({ ...form, installment_amount: e.target.value })} />
-        <input type="date" value={form.disbursed_at} onChange={(e) => setForm({ ...form, disbursed_at: e.target.value })} required />
-        <button className="btn" type="submit">Create Loan</button>
-      </form>
+      <div className="grid">
+        <form className="card" onSubmit={onSubmit}>
+          <h3>Create Loan (Schedule Mode)</h3>
+          <p className="muted">Formula: principal + one-time fee %, then monthly interest, divide by tenure, add fixed 10, then round up to nearest 10.</p>
+          <select value={form.customer_id} onChange={(e) => setForm({ ...form, customer_id: e.target.value })} required>
+            <option value="">Select customer</option>
+            {customers.map((c) => (
+              <option key={c.id} value={c.id}>{c.full_name}</option>
+            ))}
+          </select>
+          <input type="number" step="0.01" placeholder="Loan amount" value={form.loan_amount} onChange={(e) => setForm({ ...form, loan_amount: e.target.value })} required />
+          <input type="number" step="0.01" placeholder="Total interest % (optional)" value={form.interest_rate} onChange={(e) => setForm({ ...form, interest_rate: e.target.value })} />
+          <input type="number" step="0.0001" placeholder="Monthly interest % (example: 3)" value={form.monthly_interest_rate} onChange={(e) => setForm({ ...form, monthly_interest_rate: e.target.value })} />
+          <input type="number" step="0.0001" placeholder="One-time fee % (service + stamping)" value={form.combined_charge_rate} onChange={(e) => setForm({ ...form, combined_charge_rate: e.target.value })} />
+          <input type="number" placeholder="Tenure (months)" value={form.tenure_months} onChange={(e) => setForm({ ...form, tenure_months: e.target.value })} required />
+          <input type="number" step="0.01" placeholder="Monthly payment (optional override)" value={form.installment_amount} onChange={(e) => setForm({ ...form, installment_amount: e.target.value })} />
+          <input type="date" value={form.disbursed_at} onChange={(e) => setForm({ ...form, disbursed_at: e.target.value })} required />
+          <button className="btn" type="submit">Create Loan</button>
+        </form>
+
+        <form className="card" onSubmit={onShortTermSubmit}>
+          <h3>Create Short-Term Borrowing</h3>
+          <p className="muted">No fee. Interest is charged once. Customer can later pay interest only or principal separately.</p>
+          {shortTermMessage ? <p className="muted">{shortTermMessage}</p> : null}
+          {shortTermError ? <p className="error">{shortTermError}</p> : null}
+          <select value={shortTermForm.customer_id} onChange={(e) => setShortTermForm({ ...shortTermForm, customer_id: e.target.value })} required>
+            <option value="">Select customer</option>
+            {customers.map((c) => (
+              <option key={c.id} value={c.id}>{c.full_name}</option>
+            ))}
+          </select>
+          <input type="number" step="0.01" placeholder="Principal amount" value={shortTermForm.principal_amount} onChange={(e) => setShortTermForm({ ...shortTermForm, principal_amount: e.target.value })} required />
+          <input type="number" step="0.01" placeholder="Interest % (example: 20)" value={shortTermForm.interest_rate} onChange={(e) => setShortTermForm({ ...shortTermForm, interest_rate: e.target.value })} required />
+          <input type="date" value={shortTermForm.disbursed_at} onChange={(e) => setShortTermForm({ ...shortTermForm, disbursed_at: e.target.value })} required />
+          <input type="date" value={shortTermForm.due_date} onChange={(e) => setShortTermForm({ ...shortTermForm, due_date: e.target.value })} required />
+          <input placeholder="Note (optional)" value={shortTermForm.note} onChange={(e) => setShortTermForm({ ...shortTermForm, note: e.target.value })} />
+          <button className="btn" type="submit">Create Short-Term</button>
+        </form>
+      </div>
 
       <div className="card">
         <div className="section-heading">
@@ -156,7 +217,7 @@ function LoansPage() {
 
       {schedule && (
         <div className="card" style={{ gridColumn: "1 / -1", overflowX: "auto" }}>
-          <h3>Loan Schedule #{schedule.loan_id}</h3>
+          <h3>Loan Schedule #{schedule.loan_id} - {schedule.customer_name}</h3>
           <p>
             Loan Date: {schedule.loan_date} | Tenure: {schedule.tenure_months} months |
             Payment: {schedule.installment_amount} | Monthly Interest: {schedule.monthly_interest_rate}% |
@@ -171,6 +232,33 @@ function LoansPage() {
           <p>
             Periods Paid: {schedule.periods_paid} | Periods Remaining: {schedule.periods_remaining}
           </p>
+          {visibleShortTermLoans.length ? (
+            <div style={{ marginBottom: "1rem" }}>
+              <h4>Short-Term Borrowing</h4>
+              <table>
+                <thead>
+                  <tr><th>ID</th><th>Principal</th><th>Interest %</th><th>Interest Due</th><th>Total Due</th><th>Interest Paid</th><th>Principal Paid</th><th>Balance</th><th>Due Date</th><th>Status</th><th>Note</th></tr>
+                </thead>
+                <tbody>
+                  {visibleShortTermLoans.map((item) => (
+                    <tr key={item.id}>
+                      <td>{item.id}</td>
+                      <td>{item.principal_amount}</td>
+                      <td>{item.interest_rate}</td>
+                      <td>{item.interest_due}</td>
+                      <td>{item.total_due}</td>
+                      <td>{item.interest_paid}</td>
+                      <td>{item.principal_paid}</td>
+                      <td>{item.current_balance}</td>
+                      <td>{item.due_date}</td>
+                      <td>{item.status}</td>
+                      <td>{item.note || "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
           <input
             placeholder="Search schedule row"
             value={scheduleSearchTerm}

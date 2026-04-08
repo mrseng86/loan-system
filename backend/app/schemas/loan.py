@@ -62,8 +62,26 @@ class LoanScheduleRow(BaseModel):
     installment_status: str
 
 
+class ShortTermLoanSummary(BaseModel):
+    id: int
+    customer_id: int
+    principal_amount: Decimal
+    interest_rate: Decimal
+    interest_due: Decimal
+    total_due: Decimal
+    principal_paid: Decimal
+    interest_paid: Decimal
+    current_balance: Decimal
+    disbursed_at: date
+    due_date: date
+    status: str
+    note: str | None = None
+
+
 class LoanSchedule(BaseModel):
     loan_id: int
+    customer_id: int
+    customer_name: str
     loan_date: date
     principal_amount: Decimal
     latest_balance: Decimal
@@ -77,4 +95,5 @@ class LoanSchedule(BaseModel):
     stamp_duty_rate: Decimal
     periods_paid: int
     periods_remaining: int
+    short_term_loans: list[ShortTermLoanSummary]
     rows: list[LoanScheduleRow]
