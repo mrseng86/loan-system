@@ -39,12 +39,26 @@ function CustomersPage() {
     e.preventDefault();
     setCustomerActionError("");
     setCustomerActionMessage("");
-    if (editingId) {
-      await api.put(`/customers/${editingId}`, form);
-      setCustomerActionMessage("Customer updated.");
-    } else {
-      await api.post("/customers", form);
-      setCustomerActionMessage("Customer created.");
+
+    const payload = {
+      full_name: form.full_name,
+      email: form.email.trim() ? form.email.trim() : null,
+      phone: form.phone.trim(),
+      address: form.address.trim() ? form.address.trim() : null,
+      national_id: form.national_id.trim() ? form.national_id.trim() : null,
+    };
+
+    try {
+      if (editingId) {
+        await api.put(`/customers/${editingId}`, payload);
+        setCustomerActionMessage("Customer updated.");
+      } else {
+        await api.post("/customers", payload);
+        setCustomerActionMessage("Customer created.");
+      }
+    } catch (error) {
+      setCustomerActionError(error.response?.data?.detail || "Unable to save customer.");
+      return;
     }
     setForm(initialForm);
     setEditingId(null);
@@ -214,6 +228,8 @@ function CustomersPage() {
 
         <form className="card" onSubmit={onSubmit}>
           <h3>{editingId ? "Edit Customer" : "Add Customer"}</h3>
+          {customerActionMessage ? <p className="muted">{customerActionMessage}</p> : null}
+          {customerActionError ? <p className="error">{customerActionError}</p> : null}
           <input placeholder="Full name" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required />
           <input placeholder="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           <input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required />
