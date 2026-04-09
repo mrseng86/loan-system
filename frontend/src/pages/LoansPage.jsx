@@ -21,6 +21,49 @@ const initialShortTermForm = {
   note: "",
 };
 
+const isClosedShortTermLoan = (loan) =>
+  Number(loan?.current_balance ?? 0) <= 0 || loan?.status === "settled";
+
+const getShortTermStatusLabel = (loan) => (isClosedShortTermLoan(loan) ? "closed" : loan.status);
+
+const getShortTermStatusStyle = (loan) => {
+  const status = getShortTermStatusLabel(loan);
+
+  if (status === "overdue") {
+    return {
+      color: "#991b1b",
+      backgroundColor: "#fee2e2",
+      fontWeight: 700,
+      padding: "0.2rem 0.5rem",
+      borderRadius: "999px",
+      display: "inline-block",
+      textTransform: "capitalize",
+    };
+  }
+
+  if (status === "active") {
+    return {
+      color: "#166534",
+      backgroundColor: "#dcfce7",
+      fontWeight: 700,
+      padding: "0.2rem 0.5rem",
+      borderRadius: "999px",
+      display: "inline-block",
+      textTransform: "capitalize",
+    };
+  }
+
+  return {
+    color: "#475569",
+    backgroundColor: "#e2e8f0",
+    fontWeight: 700,
+    padding: "0.2rem 0.5rem",
+    borderRadius: "999px",
+    display: "inline-block",
+    textTransform: "capitalize",
+  };
+};
+
 function LoansPage() {
   const [customers, setCustomers] = useState([]);
   const [loans, setLoans] = useState([]);
@@ -32,16 +75,38 @@ function LoansPage() {
   const [scheduleSearchTerm, setScheduleSearchTerm] = useState("");
   const [shortTermMessage, setShortTermMessage] = useState("");
   const [shortTermError, setShortTermError] = useState("");
+  const [loanError, setLoanError] = useState("");
+  const [scheduleError, setScheduleError] = useState("");
+  const [showClosedShortTerm, setShowClosedShortTerm] = useState(false);
+  const [showClosedLoans, setShowClosedLoans] = useState(false);
 
   const loadData = async () => {
-    const [customersRes, loansRes, shortTermLoansRes] = await Promise.all([
+    setLoanError("");
+    const results = await Promise.allSettled([
       api.get("/customers"),
       api.get("/loans"),
       api.get("/short-term-loans"),
     ]);
-    setCustomers(customersRes.data);
-    setLoans(loansRes.data);
-    setShortTermLoans(shortTermLoansRes.data);
+
+    if (results[0].status === "fulfilled") {
+      setCustomers(results[0].value.data);
+    } else {
+      setCustomers([]);
+      setLoanError(results[0].reason?.response?.data?.detail || "Unable to load customers.");
+    }
+
+    if (results[1].status === "fulfilled") {
+      setLoans(results[1].value.data);
+    } else {
+      setLoans([]);
+      setLoanError(results[1].reason?.response?.data?.detail || "Unable to load loans.");
+    }
+
+    if (results[2].status === "fulfilled") {
+      setShortTermLoans(results[2].value.data);
+    } else {
+      setShortTermLoans([]);
+    }
   };
 
   useEffect(() => {
@@ -66,9 +131,16 @@ function LoansPage() {
   };
 
   const viewSchedule = async (loanId) => {
-    const { data } = await api.get(`/loans/${loanId}/schedule`);
-    setSchedule(data);
-    setScheduleSearchTerm("");
+    setScheduleError("");
+    try {
+      const { data } = await api.get(`/loans/${loanId}/schedule`);
+      setSchedule(data);
+      setScheduleSearchTerm("");
+      setShowClosedShortTerm(false);
+    } catch (error) {
+      setSchedule(null);
+      setScheduleError(error.response?.data?.detail || "Unable to open this schedule.");
+    }
   };
 
   const onShortTermSubmit = async (e) => {
@@ -95,6 +167,10 @@ function LoansPage() {
 
   const normalizedLoanSearch = loanSearchTerm.trim().toLowerCase();
   const filteredLoans = loans.filter((loan) => {
+    if (!showClosedLoans && loan.status === "closed") {
+      return false;
+    }
+
     if (!normalizedLoanSearch) {
       return true;
     }
@@ -131,8 +207,19 @@ function LoansPage() {
           .some((value) => String(value).toLowerCase().includes(normalizedScheduleSearch));
       })
     : [];
-  const visibleShortTermLoans = schedule
-    ? shortTermLoans.filter((loan) => loan.customer_id === schedule.customer_id)
+  const openShortTermLoans = schedule
+    ? shortTermLoans.filter(
+        (loan) =>
+          loan.customer_id === schedule.customer_id &&
+          !isClosedShortTermLoan(loan)
+      )
+    : [];
+  const closedShortTermLoans = schedule
+    ? shortTermLoans.filter(
+        (loan) =>
+          loan.customer_id === schedule.customer_id &&
+          isClosedShortTermLoan(loan)
+      )
     : [];
 
   return (
@@ -182,7 +269,16 @@ function LoansPage() {
           <div>
             <h3>Loan Accounts</h3>
             <p className="muted">Search by customer name, loan ID, status, amount, or balance.</p>
+            {loanError ? <p className="error">{loanError}</p> : null}
+            {scheduleError ? <p className="error">{scheduleError}</p> : null}
           </div>
+          <button
+            className="btn small"
+            type="button"
+            onClick={() => setShowClosedLoans((value) => !value)}
+          >
+            {showClosedLoans ? "Hide Closed Loans" : "Show Closed Loans"}
+          </button>
         </div>
         <input
           placeholder="Search loan"
@@ -203,7 +299,7 @@ function LoansPage() {
                 <td>{l.current_balance}</td>
                 <td>{l.status}</td>
                 <td>{l.days_overdue}</td>
-                <td><button className="btn small" onClick={() => viewSchedule(l.id)}>Schedule</button></td>
+                <td><button className="btn small" type="button" onClick={() => viewSchedule(l.id)}>Schedule</button></td>
               </tr>
             ))}
             {!filteredLoans.length ? (
@@ -232,7 +328,7 @@ function LoansPage() {
           <p>
             Periods Paid: {schedule.periods_paid} | Periods Remaining: {schedule.periods_remaining}
           </p>
-          {visibleShortTermLoans.length ? (
+          {openShortTermLoans.length ? (
             <div style={{ marginBottom: "1rem" }}>
               <h4>Short-Term Borrowing</h4>
               <table>
@@ -240,7 +336,7 @@ function LoansPage() {
                   <tr><th>ID</th><th>Principal</th><th>Interest %</th><th>Interest Due</th><th>Total Due</th><th>Interest Paid</th><th>Principal Paid</th><th>Interest Balance</th><th>Principal Balance</th><th>Balance</th><th>Due Date</th><th>Status</th><th>Note</th></tr>
                 </thead>
                 <tbody>
-                  {visibleShortTermLoans.map((item) => (
+                  {openShortTermLoans.map((item) => (
                     <tr key={item.id}>
                       <td>{item.id}</td>
                       <td>{item.principal_amount}</td>
@@ -253,12 +349,58 @@ function LoansPage() {
                       <td>{(Number(item.principal_amount) - Number(item.principal_paid)).toFixed(2)}</td>
                       <td>{item.current_balance}</td>
                       <td>{item.due_date}</td>
-                      <td>{item.status}</td>
+                      <td>
+                        <span style={getShortTermStatusStyle(item)}>
+                          {getShortTermStatusLabel(item)}
+                        </span>
+                      </td>
                       <td>{item.note || "-"}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+          ) : null}
+          {closedShortTermLoans.length ? (
+            <div style={{ marginBottom: "1rem" }}>
+              <div className="section-heading" style={{ marginBottom: "0.75rem" }}>
+                <div>
+                  <h4>Closed Short-Term Accounts</h4>
+                  <p className="muted">{closedShortTermLoans.length} closed account(s).</p>
+                </div>
+                <button
+                  className="btn small"
+                  type="button"
+                  onClick={() => setShowClosedShortTerm((value) => !value)}
+                >
+                  {showClosedShortTerm ? "Hide Closed" : "Show Closed"}
+                </button>
+              </div>
+              {showClosedShortTerm ? (
+                <table>
+                  <thead>
+                    <tr><th>ID</th><th>Principal</th><th>Total Due</th><th>Interest Paid</th><th>Principal Paid</th><th>Closed Balance</th><th>Status</th><th>Note</th></tr>
+                  </thead>
+                  <tbody>
+                    {closedShortTermLoans.map((item) => (
+                      <tr key={item.id}>
+                        <td>{item.id}</td>
+                        <td>{item.principal_amount}</td>
+                        <td>{item.total_due}</td>
+                        <td>{item.interest_paid}</td>
+                        <td>{item.principal_paid}</td>
+                        <td>{item.current_balance}</td>
+                        <td>
+                          <span style={getShortTermStatusStyle(item)}>
+                            closed
+                          </span>
+                        </td>
+                        <td>{item.note || "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : null}
             </div>
           ) : null}
           <input
