@@ -2,7 +2,7 @@ import enum
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Date, DateTime, Enum, ForeignKey, Integer, Numeric, func
+from sqlalchemy import JSON, Date, DateTime, Enum, ForeignKey, Integer, Numeric, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
@@ -40,6 +40,16 @@ class Loan(Base):
     days_overdue: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    ai_risk_score: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
+    ai_risk_level: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    ai_recommendation: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    ai_reasoning: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ai_red_flags: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    ai_positive_signals: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    ai_provider: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    ai_model: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    ai_reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     customer = relationship("Customer", back_populates="loans")
     repayments = relationship("Repayment", back_populates="loan", cascade="all, delete-orphan")

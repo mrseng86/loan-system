@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, collections, customers, dashboard, loans, perkeso, repayments, short_term_loans
+from app.api import auth, collections, customers, dashboard, loans, moderation, perkeso, repayments, short_term_loans
 from app.core.config import settings
 from app.core.security import get_password_hash
 from app.db.session import Base, SessionLocal, engine
@@ -55,4 +55,5 @@ app.include_router(short_term_loans.router, prefix="/api")
 app.include_router(collections.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
 app.include_router(perkeso.router, prefix="/api")
+app.include_router(moderation.router, prefix="/api")
 

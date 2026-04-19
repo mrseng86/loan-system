@@ -79,6 +79,10 @@ function LoansPage() {
   const [scheduleError, setScheduleError] = useState("");
   const [showClosedShortTerm, setShowClosedShortTerm] = useState(false);
   const [showClosedLoans, setShowClosedLoans] = useState(false);
+  const [moderation, setModeration] = useState(null);
+  const [moderationLoading, setModerationLoading] = useState(false);
+  const [moderationError, setModerationError] = useState("");
+  const [moderationLoanId, setModerationLoanId] = useState(null);
 
   const loadData = async () => {
     setLoanError("");
@@ -128,6 +132,57 @@ function LoansPage() {
     });
     setForm(initialForm);
     loadData();
+  };
+
+  const runModeration = async (loanId) => {
+    setModerationError("");
+    setModeration(null);
+    setModerationLoanId(loanId);
+    setModerationLoading(true);
+    try {
+      const { data } = await api.post(`/moderation/loans/${loanId}`);
+      setModeration(data);
+      await loadData();
+    } catch (error) {
+      setModerationError(error.response?.data?.detail || "AI moderation failed.");
+    } finally {
+      setModerationLoading(false);
+    }
+  };
+
+  const recommendationStyle = (recommendation) => {
+    const base = {
+      fontWeight: 700,
+      padding: "0.2rem 0.6rem",
+      borderRadius: "999px",
+      display: "inline-block",
+      textTransform: "capitalize",
+    };
+    if (recommendation === "approve") {
+      return { ...base, color: "#166534", backgroundColor: "#dcfce7" };
+    }
+    if (recommendation === "reject") {
+      return { ...base, color: "#991b1b", backgroundColor: "#fee2e2" };
+    }
+    return { ...base, color: "#92400e", backgroundColor: "#fef3c7" };
+  };
+
+  const riskBadgeStyle = (level) => {
+    const base = {
+      fontWeight: 700,
+      padding: "0.2rem 0.6rem",
+      borderRadius: "999px",
+      display: "inline-block",
+      textTransform: "capitalize",
+      marginLeft: "0.5rem",
+    };
+    if (level === "high") {
+      return { ...base, color: "#991b1b", backgroundColor: "#fee2e2" };
+    }
+    if (level === "medium") {
+      return { ...base, color: "#92400e", backgroundColor: "#fef3c7" };
+    }
+    return { ...base, color: "#166534", backgroundColor: "#dcfce7" };
   };
 
   const viewSchedule = async (loanId) => {
@@ -287,7 +342,7 @@ function LoansPage() {
         />
         <table>
           <thead>
-            <tr><th>ID</th><th>Customer Name</th><th>Amount</th><th>Installment</th><th>Balance</th><th>Status</th><th>Overdue</th><th>Action</th></tr>
+            <tr><th>ID</th><th>Customer Name</th><th>Amount</th><th>Installment</th><th>Balance</th><th>Status</th><th>Overdue</th><th>AI Risk</th><th>Action</th></tr>
           </thead>
           <tbody>
             {filteredLoans.map((l) => (
@@ -299,17 +354,79 @@ function LoansPage() {
                 <td>{l.current_balance}</td>
                 <td>{l.status}</td>
                 <td>{l.days_overdue}</td>
-                <td><button className="btn small" type="button" onClick={() => viewSchedule(l.id)}>Schedule</button></td>
+                <td>
+                  {l.ai_risk_level ? (
+                    <span style={riskBadgeStyle(l.ai_risk_level)}>
+                      {l.ai_risk_level} {l.ai_risk_score ? `(${Number(l.ai_risk_score).toFixed(0)})` : ""}
+                    </span>
+                  ) : (
+                    <span className="muted">-</span>
+                  )}
+                </td>
+                <td>
+                  <div className="action-row">
+                    <button className="btn small" type="button" onClick={() => viewSchedule(l.id)}>Schedule</button>
+                    <button
+                      className="btn small"
+                      type="button"
+                      onClick={() => runModeration(l.id)}
+                      disabled={moderationLoading && moderationLoanId === l.id}
+                    >
+                      {moderationLoading && moderationLoanId === l.id ? "AI..." : "AI Review"}
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))}
             {!filteredLoans.length ? (
               <tr>
-                <td colSpan="8" className="muted">No loan matched your search.</td>
+                <td colSpan="9" className="muted">No loan matched your search.</td>
               </tr>
             ) : null}
           </tbody>
         </table>
       </div>
+
+      {(moderation || moderationError || moderationLoading) && moderationLoanId ? (
+        <div className="card" style={{ gridColumn: "1 / -1" }}>
+          <div className="section-heading">
+            <div>
+              <h3>AI Moderation Result — Loan #{moderationLoanId}</h3>
+              <p className="muted">Advisory only. Use together with manual review.</p>
+            </div>
+            <button className="btn small" type="button" onClick={() => { setModeration(null); setModerationError(""); setModerationLoanId(null); }}>Close</button>
+          </div>
+          {moderationLoading ? <p className="muted">AI is reviewing the borrower record...</p> : null}
+          {moderationError ? <p className="error">{moderationError}</p> : null}
+          {moderation ? (
+            <div className="grid">
+              <p>
+                <strong>Recommendation:</strong>{" "}
+                <span style={recommendationStyle(moderation.recommendation)}>{moderation.recommendation}</span>
+                <span style={riskBadgeStyle(moderation.risk_level)}>
+                  {moderation.risk_level} ({Number(moderation.risk_score).toFixed(0)}/100)
+                </span>
+              </p>
+              <p><strong>Reasoning:</strong> {moderation.reasoning}</p>
+              {moderation.red_flags?.length ? (
+                <div>
+                  <strong>Red flags:</strong>
+                  <ul>{moderation.red_flags.map((flag, idx) => <li key={`f-${idx}`}>{flag}</li>)}</ul>
+                </div>
+              ) : null}
+              {moderation.positive_signals?.length ? (
+                <div>
+                  <strong>Positive signals:</strong>
+                  <ul>{moderation.positive_signals.map((sig, idx) => <li key={`p-${idx}`}>{sig}</li>)}</ul>
+                </div>
+              ) : null}
+              <p className="muted">
+                Reviewed by {moderation.provider} / {moderation.model} at {new Date(moderation.reviewed_at).toLocaleString()}
+              </p>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {schedule && (
         <div className="card" style={{ gridColumn: "1 / -1", overflowX: "auto" }}>

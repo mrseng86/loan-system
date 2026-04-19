@@ -37,6 +37,15 @@ class LoanRead(BaseModel):
     status: LoanStatus
     days_overdue: int
     created_at: datetime
+    ai_risk_score: Decimal | None = None
+    ai_risk_level: str | None = None
+    ai_recommendation: str | None = None
+    ai_reasoning: str | None = None
+    ai_red_flags: list[str] | None = None
+    ai_positive_signals: list[str] | None = None
+    ai_provider: str | None = None
+    ai_model: str | None = None
+    ai_reviewed_at: datetime | None = None
     model_config = ConfigDict(from_attributes=True)
 
 

@@ -79,6 +79,14 @@ loan-management-system/
 - Bad debt count
 - Repayment statistics
 
+8. AI moderation (advisory)
+- Free local model via Ollama (default: `gemma2:2b`) or Google Gemini free tier
+- One-click "AI Review" on each loan returns a risk score (0-100), risk
+  level, recommendation (approve / review / reject), reasoning, red flags
+  and positive signals
+- Result persisted on the loan record so manual reviewers can see it later
+- Strictly advisory; final decision still requires human approval
+
 ## Run Instructions
 
 ### 1) Start backend stack (PostgreSQL + FastAPI)
@@ -151,6 +159,35 @@ npm.cmd run test
 - `GET/POST /api/repayments`
 - `GET/POST /api/collections`
 - `GET /api/dashboard/stats`
+- `GET /api/moderation/status`
+- `POST /api/moderation/loans/{loan_id}` (admin/staff)
+- `POST /api/moderation/customers/{customer_id}` (admin/staff)
+
+## AI Moderation Setup
+
+The default provider is Ollama running on the host machine (free, offline):
+
+```bash
+# install ollama: https://ollama.com/download
+ollama pull gemma2:2b
+ollama serve   # listens on http://localhost:11434
+```
+
+The compose file already maps `host.docker.internal` so the backend
+container can reach the host's Ollama. Override via env:
+
+```bash
+AI_PROVIDER=ollama AI_MODEL=gemma2:2b docker compose up -d backend
+```
+
+To use Google Gemini instead (free tier, requires an API key from
+https://aistudio.google.com/):
+
+```bash
+AI_PROVIDER=gemini AI_MODEL=gemini-1.5-flash GEMINI_API_KEY=xxxx docker compose up -d backend
+```
+
+Set `AI_PROVIDER=disabled` to turn the feature off entirely.
 
 ## Notes
 
