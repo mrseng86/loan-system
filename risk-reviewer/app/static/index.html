@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Local Risk Reviewer</title>
+    <link rel="stylesheet" href="/ui/css/style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Local Risk Reviewer</h1>
+      <p class="muted">
+        Upload a customer document (PDF / image / text). A local free AI model
+        reads it and gives you a risk opinion. Everything stays on this machine.
+      </p>
+      <div id="health" class="health"></div>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>New Review</h2>
+        <form id="upload-form">
+          <label>
+            Customer / subject name (optional)
+            <input type="text" name="subject_name" placeholder="e.g. Lim Wei Ming" />
+          </label>
+          <label>
+            Document file
+            <input type="file" name="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.txt,.csv,.md" required />
+          </label>
+          <button type="submit" id="submit-btn">Analyse</button>
+          <p id="submit-status" class="status"></p>
+        </form>
+      </section>
+
+      <section id="result-section" class="card hidden">
+        <div class="section-head">
+          <h2>Latest Result</h2>
+          <button type="button" id="close-result" class="secondary">Close</button>
+        </div>
+        <div id="result-body"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-head">
+          <h2>Past Reviews</h2>
+          <button type="button" id="refresh-btn" class="secondary">Refresh</button>
+        </div>
+        <table id="history-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Date</th>
+              <th>Subject</th>
+              <th>File</th>
+              <th>Document</th>
+              <th>Risk</th>
+              <th>Recommendation</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="history-body">
+            <tr><td colspan="8" class="muted">No reviews yet.</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+
+    <script src="/ui/js/app.js"></script>
+  </body>
+</html>
