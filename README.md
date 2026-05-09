@@ -1,159 +1,125 @@
-# Loan Management System
+# Hotel Compare
 
-Full-stack web application for managing customers, loans, repayments, overdue tracking, and collection actions.
+Next.js app that compares hotel **price + convenience + quality** across major
+booking platforms in a single view, and pulls **social reviews** from public
+platforms so you can sanity-check a hotel before clicking _Book_.
+
+> Currently in skeleton stage: project structure, all connector interfaces,
+> the Booking.com connector, and the comparison UI are wired up. Other
+> platforms ship as stubs that fall back to realistic mock data — add API
+> keys to `.env.local` to switch each one to live data.
 
 ## Stack
-- Frontend: React (Vite)
-- Backend: FastAPI
-- Database: PostgreSQL
-- Auth: JWT (role-based: admin, staff, collector)
 
-## Project Structure
+- **Next.js 15** (App Router) + **React 19** + **TypeScript**
+- **Zod** for request validation
+- Connectors are plain TS classes – no DB required for the demo.
 
-```text
-loan-management-system/
-  backend/
-    app/
-      api/
-      core/
-      db/
-      models/
-      schemas/
-      services/
-      main.py
-    .env.example
-    requirements.txt
-    main.py
-  frontend/
-    src/
-      api/
-      components/
-      context/
-      pages/
-      styles/
-    .env.example
-    index.html
-    package.json
-    vite.config.js
-  docker-compose.yml
-  .gitignore
-```
-
-## Features Implemented
-
-1. User login system
-- Email + password JWT login
-- Role model: admin, staff, collector
-- Default admin seeded on startup (`admin@lms.com` / `admin123`)
-
-2. Customer management
-- Add customer
-- Edit customer
-- View customer profiles/list
-- PERKESO / EIS lookup by National ID with automatic employment contribution summary
-
-3. Loan management
-- Create loan account
-- Loan amount, interest, tenure
-- Installment auto calculation
-- Total payable and balance calculation
-- Schedule mode with monthly breakdown:
-  opening balance, principal paid, interest paid, service charge, stamp duty, total payment, closing balance
-
-4. Repayment system
-- Record repayment
-- Auto updates loan paid amount and balance
-- Auto closes loan on full repayment
-
-5. Overdue detection
-- Auto marks overdue based on next due date
-- Calculates days overdue
-
-6. Collection tracking
-- Log actions: call, whatsapp, visit, legal notice
-- View collection logs
-
-7. Dashboard
-- Total loans
-- Overdue loans
-- Bad debt count
-- Repayment statistics
-
-## Run Instructions
-
-### 1) Start backend stack (PostgreSQL + FastAPI)
+## Quick start
 
 ```bash
-docker compose up -d --build postgres backend
+npm install
+cp .env.example .env.local   # optional – fill in any keys you have
+npm run dev
 ```
 
-Backend container startup automatically does:
-- wait for PostgreSQL
-- run `alembic upgrade head`
-- run `python scripts/seed.py`
-- start API at `http://localhost:8000`
+Open http://localhost:3000 and search any city.
+Without API keys you'll see mock offers from all four platforms and mock
+reviews from all five social sources, so the UI is fully exercisable offline.
 
-### 2) Run frontend
+## Project layout
 
-```bash
-cd frontend
-npm.cmd install
-copy .env.example .env
-npm.cmd run dev
+```
+src/
+  app/
+    layout.tsx          # Root layout
+    page.tsx            # Landing + search form
+    search/page.tsx     # Server-rendered comparison results
+    api/
+      hotels/search/    # Aggregator endpoint over all HotelConnectors
+      reviews/          # Aggregator endpoint over all ReviewConnectors
+    globals.css
+  components/
+    SearchForm.tsx
+    HotelCard.tsx
+    ReviewsPanel.tsx
+  lib/
+    connectors/         # Hotel-platform connectors (Booking, Agoda, …)
+      types.ts          # HotelConnector, HotelOffer, SearchQuery
+      booking.ts        # Live + mock impl (demo)
+      agoda.ts          # Stub + mock
+      expedia.ts        # Stub + mock
+      trip.ts           # Stub + mock
+      index.ts          # Registry + searchAll()
+    reviews/            # Social-review connectors
+      types.ts
+      youtube.ts        # Live + mock impl
+      reddit.ts         # Live + mock impl
+      twitter.ts        # Live + mock impl
+      xiaohongshu.ts    # Mock-only (no public API)
+      tripadvisor.ts    # Live + mock impl
+      index.ts          # Registry + fetchAllReviews()
+    score.ts            # Combined value scoring
 ```
 
-Open [http://localhost:5173](http://localhost:5173).
+## How connectors work
 
-## Database Migration (Alembic)
+Every hotel platform implements the same interface:
 
-```bash
-docker compose run --rm backend alembic revision --autogenerate -m "your change message"
-docker compose run --rm backend alembic upgrade head
+```ts
+interface HotelConnector {
+  readonly platform: "booking" | "agoda" | "expedia" | "trip";
+  readonly displayName: string;
+  isConfigured(): boolean;
+  search(query: SearchQuery): Promise<HotelOffer[]>;
+}
 ```
 
-## Seed Demo Data
+`searchAll()` runs every connector in parallel with `Promise.allSettled`, so
+one failing platform never breaks the whole search. Each connector reads its
+own credentials from env vars (see `.env.example`); when they're absent the
+connector returns deterministic mock offers so the UI keeps working.
 
-```bash
-docker compose run --rm backend python scripts/seed.py
+The same pattern is used for social reviews via `ReviewConnector`.
+
+## Adding real API keys
+
+| Platform | Env vars | Docs |
+| --- | --- | --- |
+| Booking.com | `BOOKING_AFFILIATE_ID`, `BOOKING_API_KEY` | https://developers.booking.com/ |
+| Agoda | `AGODA_SITE_ID`, `AGODA_API_KEY` | https://partners.agoda.com/ |
+| Expedia (Rapid / EPS) | `EXPEDIA_API_KEY`, `EXPEDIA_SHARED_SECRET` | https://developers.expediagroup.com/docs/rapid |
+| Trip.com Open Platform | `TRIP_APP_KEY`, `TRIP_APP_SECRET` | https://open.trip.com/ |
+| YouTube Data API | `YOUTUBE_API_KEY` | https://developers.google.com/youtube/v3 |
+| Reddit | `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `REDDIT_USER_AGENT` | https://www.reddit.com/dev/api/ |
+| X / Twitter | `TWITTER_BEARER_TOKEN` | https://docs.x.com/x-api/ |
+| TripAdvisor | `TRIPADVISOR_API_KEY` | https://tripadvisor-content-api.readme.io/ |
+| 小红书 / 微博 | _no public API_ | needs a third-party data provider |
+
+## What's done vs. what's next
+
+Done:
+
+- Connector framework + scoring
+- Booking.com live + mock implementation as the reference connector
+- YouTube / Reddit / X / TripAdvisor live implementations (mock fallback)
+- Search UI, comparison cards, social-review panel
+- API routes for both aggregators
+
+Next steps:
+
+- Implement live calls for Agoda / Expedia / Trip.com (currently stubs)
+- Token caching for Reddit OAuth
+- Persistent search history + favourite hotels (DB layer)
+- Currency normalisation across platforms
+- A 小红书 / Weibo data provider (or scraper) – left as a documented gap
+
+## API reference
+
+```
+GET /api/hotels/search?destination=Tokyo&checkIn=2026-06-01&checkOut=2026-06-04&guests=2&rooms=1
+GET /api/reviews?hotelName=Park%20Hyatt%20Tokyo&city=Tokyo&limit=5
 ```
 
-This creates sample users:
-- `admin@lms.com / admin123`
-- `staff@lms.com / staff123`
-- `collector@lms.com / collector123`
-
-## Tests
-
-### Backend tests
-
-```bash
-docker compose --profile test run --rm backend-test
-```
-
-### Frontend tests
-
-```bash
-cd frontend
-npm.cmd install
-npm.cmd run test
-```
-
-## API Summary
-
-- `POST /api/auth/login`
-- `GET /api/auth/me`
-- `POST /api/auth/users` (admin)
-- `GET/POST /api/customers`
-- `PUT /api/customers/{id}`
-- `GET/POST /api/loans`
-- `GET /api/loans/{id}`
-- `GET /api/loans/{id}/schedule`
-- `GET/POST /api/repayments`
-- `GET/POST /api/collections`
-- `GET /api/dashboard/stats`
-
-## Notes
-
-- The compose backend uses Alembic migrations (table auto-create is disabled in container env).
-- If `docker compose` cannot connect to daemon, start Docker Desktop first.
-
+Both return JSON with `configured`, `mocked`, and `errors` fields so the UI
+can show the user which platforms are live vs. stubbed.

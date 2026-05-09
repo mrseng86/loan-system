@@ -1,0 +1,52 @@
+import type { HotelConnector, HotelOffer, SearchQuery } from "./types";
+
+/**
+ * Trip.com (Ctrip) connector stub.
+ *
+ * Real API: Trip.com Open Platform https://open.trip.com/
+ * Uses signed JSON-RPC over HTTPS with appKey + appSecret.
+ */
+export class TripConnector implements HotelConnector {
+  readonly platform = "trip" as const;
+  readonly displayName = "Trip.com";
+
+  private readonly appKey = process.env.TRIP_APP_KEY ?? "";
+  private readonly appSecret = process.env.TRIP_APP_SECRET ?? "";
+
+  isConfigured(): boolean {
+    return Boolean(this.appKey && this.appSecret);
+  }
+
+  async search(query: SearchQuery): Promise<HotelOffer[]> {
+    if (this.isConfigured()) {
+      // TODO: call Trip Open Platform /hotel/search with signed payload.
+      return [];
+    }
+    const nights = Math.max(1, days(query.checkIn, query.checkOut));
+    return ["如家", "锦江", "汉庭"].map((seed, i) => {
+      const nightly = 78 + i * 22;
+      const total = nightly * nights;
+      return {
+        id: `trip:mock-${i}`,
+        platform: "trip",
+        hotelName: `${seed} ${query.destination}`,
+        starRating: 3 + (i % 2),
+        reviewScore: 8.0 + i * 0.25,
+        reviewCount: 1200 + i * 410,
+        address: `${query.destination} 市中心`,
+        totalPrice: { amount: total, currency: query.currency ?? "CNY" },
+        perNightPrice: { amount: nightly, currency: query.currency ?? "CNY" },
+        distanceKm: 0.3 + i * 0.7,
+        freeCancellation: i % 2 === 1,
+        breakfastIncluded: i === 1,
+        deepLink: `https://hotels.trip.com/hotels/list?city=${encodeURIComponent(query.destination)}`,
+        isMock: true,
+      };
+    });
+  }
+}
+
+function days(a: string, b: string): number {
+  const ms = Date.parse(b) - Date.parse(a);
+  return Number.isFinite(ms) ? Math.round(ms / 86_400_000) : 1;
+}
