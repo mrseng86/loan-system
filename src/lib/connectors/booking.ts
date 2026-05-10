@@ -1,11 +1,15 @@
 import type { HotelConnector, HotelOffer, SearchQuery } from "./types";
 
 /**
- * Booking.com connector.
+ * Booking.com connector (read-only price/availability lookup for comparison).
  *
- * Uses Booking's Affiliate Partner API when BOOKING_AFFILIATE_ID and
- * BOOKING_API_KEY are set; otherwise returns deterministic mock data so the
- * comparison UI stays usable in development.
+ * This connector never books, reserves, or charges anything. It only fetches
+ * publicly available offer data so the user can compare options and then
+ * follow `sourceUrl` to the original platform.
+ *
+ * Uses Booking's Partner API when BOOKING_PARTNER_ID and BOOKING_API_KEY are
+ * set; otherwise returns deterministic mock data so the comparison UI stays
+ * usable in development.
  *
  * Real API docs: https://developers.booking.com/connectivity/docs
  */
@@ -13,11 +17,11 @@ export class BookingConnector implements HotelConnector {
   readonly platform = "booking" as const;
   readonly displayName = "Booking.com";
 
-  private readonly affiliateId = process.env.BOOKING_AFFILIATE_ID ?? "";
+  private readonly partnerId = process.env.BOOKING_PARTNER_ID ?? "";
   private readonly apiKey = process.env.BOOKING_API_KEY ?? "";
 
   isConfigured(): boolean {
-    return Boolean(this.affiliateId && this.apiKey);
+    return Boolean(this.partnerId && this.apiKey);
   }
 
   async search(query: SearchQuery): Promise<HotelOffer[]> {
@@ -28,10 +32,11 @@ export class BookingConnector implements HotelConnector {
   }
 
   private async liveSearch(query: SearchQuery): Promise<HotelOffer[]> {
-    // Booking's real Affiliate API uses XML over HTTP basic auth and a multi-step
-    // flow (city autocomplete -> hotel availability -> price). The skeleton below
-    // shows the shape; fill it in once partner credentials are approved.
-    const auth = Buffer.from(`${this.affiliateId}:${this.apiKey}`).toString("base64");
+    // Booking's real Partner API uses XML/JSON with HTTP basic auth and a
+    // multi-step flow (city autocomplete -> hotel availability -> price).
+    // The skeleton below shows the shape; fill it in once partner credentials
+    // are approved. We only fetch — never POST a booking.
+    const auth = Buffer.from(`${this.partnerId}:${this.apiKey}`).toString("base64");
     const url = new URL("https://distribution-xml.booking.com/json/bookings.getHotelAvailabilityV2");
     url.searchParams.set("city", query.destination);
     url.searchParams.set("checkin", query.checkIn);
@@ -71,7 +76,7 @@ export class BookingConnector implements HotelConnector {
       distanceKm: h.distance_km,
       freeCancellation: h.is_free_cancellable,
       breakfastIncluded: h.is_breakfast_included,
-      deepLink: h.url,
+      sourceUrl: h.url,
     };
   }
 
@@ -79,8 +84,9 @@ export class BookingConnector implements HotelConnector {
     const nights = Math.max(1, daysBetween(query.checkIn, query.checkOut));
     const seeds = ["Grand", "Royal", "Harbor", "Garden", "Sky"];
     return seeds.map((name, idx) => {
-      const nightly = 110 + idx * 25 + hashSeed(query.destination, idx) % 30;
+      const nightly = 110 + idx * 25 + (hashSeed(query.destination, idx) % 30);
       const total = nightly * nights;
+      const free = idx % 2 === 0;
       return {
         id: `booking:mock-${idx}`,
         platform: "booking",
@@ -93,9 +99,15 @@ export class BookingConnector implements HotelConnector {
         totalPrice: { amount: total, currency: query.currency ?? "USD" },
         perNightPrice: { amount: nightly, currency: query.currency ?? "USD" },
         distanceKm: 0.4 + idx * 0.6,
-        freeCancellation: idx % 2 === 0,
+        metroDistanceKm: 0.2 + idx * 0.3,
+        nearestLandmark: `${query.destination} Central Station`,
+        landmarkDistanceKm: 0.5 + idx * 0.4,
+        freeCancellation: free,
+        cancellationPolicy: free ? "Free until 24h before check-in" : "Non-refundable",
+        cancellationKind: free ? "free" : "non_refundable",
         breakfastIncluded: idx % 3 === 0,
-        deepLink: `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(query.destination)}`,
+        familyFriendly: idx === 1 || idx === 4,
+        sourceUrl: `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(query.destination)}`,
         isMock: true,
       };
     });

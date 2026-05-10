@@ -1,7 +1,7 @@
 import type { HotelConnector, HotelOffer, SearchQuery } from "./types";
 
 /**
- * Expedia Rapid (EPS) connector stub.
+ * Expedia Rapid (EPS) connector stub (read-only lookup for comparison).
  *
  * Real API: https://developers.expediagroup.com/docs/rapid
  * EPS uses HMAC-SHA512 signed requests with API key + shared secret.
@@ -26,6 +26,7 @@ export class ExpediaConnector implements HotelConnector {
     return ["Hilton", "Marriott", "Hyatt"].map((brand, i) => {
       const nightly = 130 + i * 35;
       const total = nightly * nights;
+      const free = i === 1;
       return {
         id: `expedia:mock-${i}`,
         platform: "expedia",
@@ -37,9 +38,15 @@ export class ExpediaConnector implements HotelConnector {
         totalPrice: { amount: total, currency: query.currency ?? "USD" },
         perNightPrice: { amount: nightly, currency: query.currency ?? "USD" },
         distanceKm: 1.2 + i * 0.4,
-        freeCancellation: i === 1,
+        metroDistanceKm: 0.7 + i * 0.5,
+        nearestLandmark: `${query.destination} International Airport`,
+        landmarkDistanceKm: 2.0 + i * 1.5,
+        freeCancellation: free,
+        cancellationPolicy: free ? "Free until 24h before check-in" : "Non-refundable",
+        cancellationKind: free ? "free" : "non_refundable",
         breakfastIncluded: i !== 2,
-        deepLink: `https://www.expedia.com/Hotel-Search?destination=${encodeURIComponent(query.destination)}`,
+        familyFriendly: i === 0,
+        sourceUrl: `https://www.expedia.com/Hotel-Search?destination=${encodeURIComponent(query.destination)}`,
         isMock: true,
       };
     });

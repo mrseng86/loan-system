@@ -27,14 +27,14 @@ export function ReviewsPanel({ hotelName, city }: { hotelName: string; city?: st
       .catch((e) => setError(String(e.message ?? e)));
   }, [hotelName, city]);
 
-  if (error) return <div className="alert">Failed to load reviews: {error}</div>;
-  if (!reviews) return <p style={{ color: "var(--muted)" }}>Loading social reviews…</p>;
-  if (reviews.length === 0) return <p style={{ color: "var(--muted)" }}>No reviews found.</p>;
+  if (error) return <div className="alert">Failed to load mentions: {error}</div>;
+  if (!reviews) return <p className="muted">Loading social mentions…</p>;
+  if (reviews.length === 0) return <p className="muted">No mentions found.</p>;
 
   return (
     <div className="reviews">
       {reviews.map((r) => (
-        <a key={r.id} className="review" href={r.url} target="_blank" rel="noreferrer">
+        <a key={r.id} className="review" href={r.url} target="_blank" rel="noreferrer noopener" title="Check Source">
           <div className="src">{SOURCE_LABEL[r.source] ?? r.source}</div>
           {r.title && <div className="title">{r.title}</div>}
           <div className="snippet">{r.snippet}</div>

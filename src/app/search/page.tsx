@@ -1,7 +1,8 @@
 import { searchAll } from "@/lib/connectors";
 import { scoreOffers } from "@/lib/score";
-import { HotelCard } from "@/components/HotelCard";
-import { ReviewsPanel } from "@/components/ReviewsPanel";
+import { tagOffers } from "@/lib/tags";
+import { recommend } from "@/lib/recommendation";
+import { ResultsView } from "@/components/ResultsView";
 import { SearchForm } from "@/components/SearchForm";
 
 interface SearchPageProps {
@@ -26,7 +27,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   if (!sp.destination || !sp.checkIn || !sp.checkOut) {
     return (
       <div>
-        <h1>Missing search params</h1>
+        <h1>Missing search parameters</h1>
         <SearchForm />
       </div>
     );
@@ -42,18 +43,19 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
   const result = await searchAll(query);
   const offers = scoreOffers(result.offers);
-  const top = offers[0];
-
+  const tagsMap = tagOffers(offers);
+  const tags = Object.fromEntries(tagsMap.entries());
+  const recommendation = recommend(offers);
   const allMocked = result.mocked.length === 4 && result.configured.length === 0;
 
   return (
     <div>
       <h1>
-        Hotels in {query.destination} · {query.checkIn} → {query.checkOut}
+        Hotel comparison · {query.destination} · {query.checkIn} → {query.checkOut}
       </h1>
       <p className="subtitle">
-        {offers.length} offers from {new Set(offers.map((o) => o.platform)).size} platforms.
-        Ranked by combined value score.
+        {offers.length} options compared across {new Set(offers.map((o) => o.platform)).size} platforms.
+        This page only compares — it does not handle bookings, payments, or guest details.
       </p>
 
       <SearchForm
@@ -79,19 +81,12 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         </div>
       )}
 
-      <h2>Best matches</h2>
-      <div className="cards">
-        {offers.map((o) => (
-          <HotelCard key={o.id} offer={o} />
-        ))}
-      </div>
-
-      {top && (
-        <>
-          <h2>Social reviews · {top.hotelName}</h2>
-          <ReviewsPanel hotelName={top.hotelName} city={query.destination} />
-        </>
-      )}
+      <ResultsView
+        offers={offers}
+        tags={tags}
+        recommendation={recommendation}
+        destination={query.destination}
+      />
     </div>
   );
 }

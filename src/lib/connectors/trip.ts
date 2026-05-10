@@ -1,7 +1,7 @@
 import type { HotelConnector, HotelOffer, SearchQuery } from "./types";
 
 /**
- * Trip.com (Ctrip) connector stub.
+ * Trip.com (Ctrip) connector stub (read-only lookup for comparison).
  *
  * Real API: Trip.com Open Platform https://open.trip.com/
  * Uses signed JSON-RPC over HTTPS with appKey + appSecret.
@@ -26,6 +26,7 @@ export class TripConnector implements HotelConnector {
     return ["如家", "锦江", "汉庭"].map((seed, i) => {
       const nightly = 78 + i * 22;
       const total = nightly * nights;
+      const free = i % 2 === 1;
       return {
         id: `trip:mock-${i}`,
         platform: "trip",
@@ -37,9 +38,15 @@ export class TripConnector implements HotelConnector {
         totalPrice: { amount: total, currency: query.currency ?? "CNY" },
         perNightPrice: { amount: nightly, currency: query.currency ?? "CNY" },
         distanceKm: 0.3 + i * 0.7,
-        freeCancellation: i % 2 === 1,
+        metroDistanceKm: 0.15 + i * 0.25,
+        nearestLandmark: `${query.destination} 火车站`,
+        landmarkDistanceKm: 0.4 + i * 0.5,
+        freeCancellation: free,
+        cancellationPolicy: free ? "免费取消（入住前24小时）" : "不可退款",
+        cancellationKind: free ? "free" : "non_refundable",
         breakfastIncluded: i === 1,
-        deepLink: `https://hotels.trip.com/hotels/list?city=${encodeURIComponent(query.destination)}`,
+        familyFriendly: i === 0,
+        sourceUrl: `https://hotels.trip.com/hotels/list?city=${encodeURIComponent(query.destination)}`,
         isMock: true,
       };
     });

@@ -12,11 +12,9 @@ export interface ScoredOffer extends HotelOffer {
 /**
  * Combined value score (0-100). Higher is better.
  *
- *   convenience = closer to centre + free cancellation + breakfast
+ *   convenience = closer to centre + closer to metro + free cancellation + breakfast
  *   quality     = star rating + review score
  *   price       = inverse of total cost, normalised against the cheapest offer
- *
- * Weights are simple and intentionally tweakable from the UI later.
  */
 export function scoreOffers(offers: HotelOffer[]): ScoredOffer[] {
   if (offers.length === 0) return [];
@@ -25,8 +23,10 @@ export function scoreOffers(offers: HotelOffer[]): ScoredOffer[] {
     .map((o) => {
       const price = cheapest > 0 ? Math.min(100, (cheapest / o.totalPrice.amount) * 100) : 0;
       const distancePts = o.distanceKm == null ? 50 : Math.max(0, 100 - o.distanceKm * 15);
+      const metroPts = o.metroDistanceKm == null ? 50 : Math.max(0, 100 - o.metroDistanceKm * 30);
       const convenience =
-        distancePts * 0.7 +
+        distancePts * 0.45 +
+        metroPts * 0.25 +
         (o.freeCancellation ? 20 : 0) +
         (o.breakfastIncluded ? 10 : 0);
       const stars = (o.starRating ?? 3) * 20;

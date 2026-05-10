@@ -6,6 +6,8 @@
   --muted: #93a0c2;
   --accent: #4f8cff;
   --accent-2: #6df0c2;
+  --accent-3: #f59cd6;
+  --warn: #f7c45a;
   --border: #28304d;
 }
 
@@ -33,6 +35,10 @@ a:hover {
   text-decoration: underline;
 }
 
+.muted {
+  color: var(--muted);
+}
+
 .site-header {
   display: flex;
   justify-content: space-between;
@@ -56,7 +62,7 @@ a:hover {
 }
 
 main {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 32px;
 }
@@ -66,16 +72,29 @@ h1 {
   margin: 0 0 8px;
 }
 h2 {
-  font-size: 18px;
-  margin: 24px 0 12px;
+  font-size: 16px;
+  margin: 32px 0 12px;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+h3 {
+  margin: 4px 0 8px;
+  font-size: 18px;
 }
 
 .subtitle {
   color: var(--muted);
   margin: 0 0 24px;
+}
+
+.feature-list {
+  color: var(--text);
+  line-height: 1.7;
+  padding-left: 20px;
+}
+.feature-list.muted {
+  color: var(--muted);
 }
 
 .search-form {
@@ -125,13 +144,96 @@ button.primary:hover {
 .alert {
   background: rgba(247, 196, 90, 0.12);
   border: 1px solid rgba(247, 196, 90, 0.4);
-  color: #f7c45a;
+  color: var(--warn);
   border-radius: 8px;
   padding: 10px 14px;
   font-size: 13px;
   margin: 16px 0;
 }
 
+/* Recommendation summary */
+.reco {
+  background: linear-gradient(135deg, rgba(79, 140, 255, 0.12), rgba(109, 240, 194, 0.08));
+  border: 1px solid rgba(79, 140, 255, 0.4);
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 24px;
+}
+.reco-tag {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.reco-picks {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.reco-picks li {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  background: rgba(11, 16, 32, 0.6);
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.reco-pick-label {
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-2);
+  font-weight: 700;
+}
+.reco-pick-name {
+  font-weight: 600;
+}
+.reco-pick-reason {
+  font-size: 12px;
+  color: var(--muted);
+}
+.reco-disclaimer {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 12px;
+}
+
+/* Filters */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.chip {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.chip:hover {
+  color: var(--text);
+}
+.chip--on {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+.chip--ghost {
+  background: transparent;
+}
+
+/* Cards */
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -146,6 +248,11 @@ button.primary:hover {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  transition: border-color 120ms ease;
+}
+.card--selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(79, 140, 255, 0.18);
 }
 .card .row {
   display: flex;
@@ -194,13 +301,39 @@ button.primary:hover {
   color: var(--muted);
   border: 1px solid var(--border);
 }
-.badge.good {
+.tag--good {
   color: var(--accent-2);
-  border-color: rgba(109, 240, 194, 0.35);
+  border-color: rgba(109, 240, 194, 0.4);
+  background: rgba(109, 240, 194, 0.08);
+}
+.tag--info {
+  color: var(--accent);
+  border-color: rgba(79, 140, 255, 0.4);
+  background: rgba(79, 140, 255, 0.08);
+}
+.tag--highlight {
+  color: var(--accent-3);
+  border-color: rgba(245, 156, 214, 0.45);
+  background: rgba(245, 156, 214, 0.08);
 }
 .badge.mock {
-  color: #f7c45a;
+  color: var(--warn);
   border-color: rgba(247, 196, 90, 0.35);
+}
+
+.card .facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  font-size: 12px;
+  margin: 4px 0 0;
+}
+.card .facts dt {
+  color: var(--muted);
+}
+.card .facts dd {
+  margin: 0;
+  color: var(--text);
 }
 
 .score {
@@ -224,6 +357,102 @@ button.primary:hover {
   border-radius: 4px;
 }
 
+.link-source {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  background: transparent;
+}
+.link-source:hover {
+  background: rgba(79, 140, 255, 0.1);
+  text-decoration: none;
+}
+
+.select-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  margin-top: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+.select-row input {
+  accent-color: var(--accent);
+}
+
+/* Comparison table */
+.compare-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+.compare {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 640px;
+}
+.compare th,
+.compare td {
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.compare thead th {
+  background: var(--panel-2);
+  color: var(--muted);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+.compare tbody th {
+  color: var(--muted);
+  font-weight: 500;
+  width: 160px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.compare-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.compare-head .platform {
+  width: fit-content;
+}
+.compare-head strong {
+  color: var(--text);
+  font-weight: 600;
+}
+.compare td.winner {
+  color: var(--accent-2);
+  font-weight: 700;
+}
+.link-button {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  align-self: flex-start;
+}
+.link-button:hover {
+  color: var(--text);
+}
+
+/* Reviews */
 .reviews {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -235,6 +464,11 @@ button.primary:hover {
   border-radius: 10px;
   padding: 12px;
   font-size: 13px;
+  color: var(--text);
+}
+.review:hover {
+  text-decoration: none;
+  border-color: var(--accent);
 }
 .review .src {
   font-size: 11px;

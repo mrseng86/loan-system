@@ -3,7 +3,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Hotel Compare",
-  description: "Compare hotel prices and convenience across booking platforms.",
+  description:
+    "Side-by-side hotel comparison and decision-support tool. Not a booking platform.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
