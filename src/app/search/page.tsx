@@ -1,9 +1,8 @@
+import { Suspense } from "react";
 import { searchAll } from "@/lib/connectors";
-import { scoreOffers } from "@/lib/score";
-import { tagOffers } from "@/lib/tags";
-import { recommend } from "@/lib/recommendation";
 import { ResultsView } from "@/components/ResultsView";
 import { SearchForm } from "@/components/SearchForm";
+import { DEFAULT_INTENT, isIntentId } from "@/lib/intent";
 
 interface SearchPageProps {
   searchParams: Promise<{
@@ -12,6 +11,8 @@ interface SearchPageProps {
     checkOut?: string;
     guests?: string;
     rooms?: string;
+    intent?: string;
+    compare?: string;
   }>;
 }
 
@@ -40,12 +41,10 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     guests: Number(sp.guests ?? 2),
     rooms: Number(sp.rooms ?? 1),
   };
+  const initialIntent = isIntentId(sp.intent) ? sp.intent : DEFAULT_INTENT;
+  const initialCompare = sp.compare ? sp.compare.split(",").filter(Boolean) : [];
 
   const result = await searchAll(query);
-  const offers = scoreOffers(result.offers);
-  const tagsMap = tagOffers(offers);
-  const tags = Object.fromEntries(tagsMap.entries());
-  const recommendation = recommend(offers);
   const allMocked = result.mocked.length === 4 && result.configured.length === 0;
 
   return (
@@ -54,8 +53,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         Hotel comparison · {query.destination} · {query.checkIn} → {query.checkOut}
       </h1>
       <p className="subtitle">
-        {offers.length} options compared across {new Set(offers.map((o) => o.platform)).size} platforms.
-        This page only compares — it does not handle bookings, payments, or guest details.
+        {result.offers.length} options compared across {new Set(result.offers.map((o) => o.platform)).size} platforms.
+        Comparison only — no bookings, payments, or guest details handled here.
       </p>
 
       <SearchForm
@@ -81,12 +80,14 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         </div>
       )}
 
-      <ResultsView
-        offers={offers}
-        tags={tags}
-        recommendation={recommendation}
-        destination={query.destination}
-      />
+      <Suspense fallback={<p className="muted">Loading comparison…</p>}>
+        <ResultsView
+          offers={result.offers}
+          destination={query.destination}
+          initialIntent={initialIntent}
+          initialCompare={initialCompare}
+        />
+      </Suspense>
     </div>
   );
 }

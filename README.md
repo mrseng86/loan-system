@@ -1,4 +1,4 @@
-# Hotel Compare — comparison & decision-support tool
+# Hotel Compare — AI-assisted hotel decision experience
 
 > **This is not a booking platform.** Hotel Compare does **not** book hotels,
 > reserve rooms, accept payments, collect guest details, or issue
@@ -8,67 +8,74 @@
 > decide and book there.
 
 Next.js app that compares hotel offers across major platforms and helps you
-decide which one fits your needs — by price, location, cancellation policy,
-breakfast, rating and family-friendliness — with a rule-based smart summary
-and a side-by-side comparison table.
+decide. Travel-mode scoring, price-confidence signals, a smart natural-language
+summary, a split list / map view, head-to-head battle mode, and shareable
+comparison links — all comparison-focused, no booking flow anywhere.
 
-## What it compares
+## Headline features
 
-For every hotel found, the app shows and compares:
+### 1. Smart summary in natural language
+A rule-based assistant (`src/lib/recommendation.ts`) writes a 3-4 sentence
+prose summary of the result set: how many platforms were compared, the price
+range, how many offers are flexible or include breakfast, which prices are
+trending down or look like good deals, and the top-rated option. The wording
+adapts to the active travel mode and remains fully deterministic so users can
+audit why each phrase was chosen.
 
-- **Multi-platform price comparison** — total stay price + per-night price.
-- **Cancellation policy comparison** — free / partial / non-refundable, with
-  the platform's own wording.
-- **Breakfast included comparison** — Yes / No per offer.
-- **Distance comparison** — to city centre, nearest metro, and a nearby
-  landmark.
-- **Rating &amp; review comparison** — star rating, review score, review count.
+### 2. Price confidence on every offer
+Each offer carries a `priceConfidence` block:
 
-## Hotel tags
+- **Last checked** timestamp (`5 min ago`, `2 h ago`, …)
+- **Trend** — up / down / stable with a percentage delta
+- **Good deal** flag when the price is meaningfully below the typical range
+- **Average price** for context
 
-Each result is automatically tagged so you can scan quickly:
+These show up as compact badges on every hotel card so you can tell at a
+glance whether a price is fresh and whether it's actually a deal.
 
-- **Cheapest** — lowest total stay price in the result set.
-- **Best Value** — highest combined price+convenience+quality score.
-- **Best for Family** — family-friendly heuristic (room type, amenities).
-- **Near Metro** — within 500&nbsp;m of a metro / subway station.
-- **Free Cancellation** — fully refundable booking conditions.
-- **Breakfast Included** — breakfast bundled into the rate.
-- **Highest Rated** — best user score in the result set.
+### 3. Split list / map experience
+A schematic, dependency-free SVG map renders alongside the list with
+distance rings (0.5 / 1 / 2 km) and a colour-coded pin per platform. Hovering
+a pin highlights its card and vice versa. Tap a pin to add it to the
+comparison. Switch to **List only** when you want a denser layout.
 
-## Side-by-side comparison
+The map is intentionally schematic, not a real basemap. When real coords
+become available the same projection math holds — just pass real lat/lng in
+on `HotelOffer.coords`.
 
-Tick **Add to compare** on up to four cards to render a comparison table that
-puts every attribute (price, distances, cancellation, breakfast, family,
-rating, source link) on a single screen. The cheapest price, highest score
-and highest review score are highlighted automatically.
+### 4. Travel intent modes
+Pick **Family / Couple / Budget / Luxury** to instantly rescore the entire
+list. Each mode applies different weights to price, convenience, quality,
+plus a family-friendly or flexibility bonus and a low-star penalty for
+luxury. The smart summary's wording follows the chosen mode.
 
-## Smart summary (rule-based)
+### 5. Hotel battle comparison view
+Add **exactly 2** hotels to the compare set and the page automatically
+swaps to a head-to-head battle view: per-category winners highlighted, an
+overall winner banner, and an outbound View Source link on each side.
+Add a 3rd hotel and it falls back to the standard side-by-side table.
 
-The result page opens with a deterministic summary that picks:
+### 6. Shareable comparison links
+The active travel mode and the selected hotel ids live in the URL
+(`?intent=family&compare=booking:mock-1,agoda:mock-0`). The **🔗 Share
+comparison** button copies the current permalink to the clipboard.
 
-- **Best value** — highest combined score.
-- **Lowest price** — cheapest total stay.
-- **Highest rated** — best user review score.
-- **Best for family** — when a family-friendly option exists.
-- **Most flexible** — best free-cancellation option, for late deciders.
+### 7. Mobile-first UX polish
+Single-column layout on small screens with 44 px tap targets and 16 px
+input fonts (no iOS auto-zoom). The split layout collapses to vertical
+on mobile, the comparison table scrolls horizontally with a sticky
+attribute column, the battle view stacks vertically.
 
-The logic is intentionally rule-based so you can audit why every pick was
-made. The same `Recommendation` interface leaves room to swap in an LLM
-later without changing the UI.
-
-## Outbound links only
-
-Every place the UI could have said _"Book Now"_, _"Reserve"_, _"Checkout"_ or
-_"Payment"_ instead says **View Source** or **Check Source** and opens the
-relevant page on the original platform in a new tab. The app itself never
-collects guest details, processes payments, or sends bookings.
+### 8. Comparison-focused, not booking-focused
+Every CTA is **View Source** or **Check Source**. No "Book", "Reserve",
+"Checkout", "Payment" or "Affiliate" wording anywhere.
 
 ## Stack
 
 - **Next.js 15** (App Router) + **React 19** + **TypeScript**
 - **Zod** for request validation
 - Connectors are plain TS classes — no DB required for the demo.
+- Map is a hand-rolled inline SVG, no map dependency.
 
 ## Quick start
 
@@ -87,34 +94,38 @@ sources, so the UI is fully exercisable offline.
 ```
 src/
   app/
-    layout.tsx          # Root layout
-    page.tsx            # Landing + search form
-    search/page.tsx     # Server-rendered comparison results
+    layout.tsx
+    page.tsx
+    search/page.tsx                # Server-rendered comparison results
     api/
-      hotels/search/    # Aggregator endpoint over all HotelConnectors
-      reviews/          # Aggregator endpoint over all ReviewConnectors
+      hotels/search/               # Aggregator endpoint over HotelConnectors
+      reviews/                     # Aggregator endpoint over ReviewConnectors
     globals.css
   components/
     SearchForm.tsx
-    HotelCard.tsx              # Tagged card + add-to-compare toggle
-    ComparisonTable.tsx        # Side-by-side selected-hotels table
-    RecommendationSummary.tsx  # Rule-based smart summary
-    ResultsView.tsx            # Client wrapper holding selection state
+    HotelCard.tsx                  # Card with tags + price-confidence + add-to-compare
+    ComparisonTable.tsx            # Side-by-side selected-hotels table
+    BattleView.tsx                 # Head-to-head 2-hotel view
+    RecommendationSummary.tsx      # Natural-language summary
+    IntentSelector.tsx             # Family / Couple / Budget / Luxury
+    MapPanel.tsx                   # Schematic SVG map
+    ShareLinkButton.tsx            # Copies the comparison permalink
+    ResultsView.tsx                # Client wrapper holding state + URL sync
     ReviewsPanel.tsx
   lib/
-    connectors/         # Hotel-platform connectors (Booking, Agoda, …)
+    connectors/
       types.ts
-      booking.ts        # Reference connector with live + mock paths
-      agoda.ts | expedia.ts | trip.ts
+      booking.ts | agoda.ts | expedia.ts | trip.ts
+      mockHelpers.ts               # Shared deterministic mock helpers
       index.ts
-    reviews/            # Social-mention connectors
+    reviews/
       types.ts
-      youtube.ts | reddit.ts | twitter.ts | tripadvisor.ts
-      xiaohongshu.ts    # mock-only (no public API)
+      youtube.ts | reddit.ts | twitter.ts | tripadvisor.ts | xiaohongshu.ts
       index.ts
-    score.ts            # Combined value score
-    tags.ts             # Tag computation
-    recommendation.ts   # Rule-based summary
+    intent.ts                      # Travel modes + scoring weights
+    score.ts                       # Intent-aware combined value score
+    tags.ts                        # Tag computation
+    recommendation.ts              # Natural-language summary
 ```
 
 ## How connectors work
@@ -133,7 +144,8 @@ interface HotelConnector {
 `searchAll()` runs every connector in parallel with `Promise.allSettled`, so
 one failing platform never breaks the whole search. Each connector reads its
 own credentials from env vars (see `.env.example`); when they're absent the
-connector returns deterministic mock offers so the UI keeps working.
+connector returns deterministic mock offers — including coords, price-
+confidence and family-friendly flags — so the UI keeps working offline.
 
 The same pattern is used for social mentions via `ReviewConnector`.
 

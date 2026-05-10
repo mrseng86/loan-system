@@ -1,5 +1,6 @@
 import type { ScoredOffer } from "@/lib/score";
 import type { Tag } from "@/lib/tags";
+import type { PriceConfidence } from "@/lib/connectors/types";
 
 const PLATFORM_LABEL: Record<string, string> = {
   booking: "Booking.com",
@@ -16,17 +17,55 @@ function fmtMoney(amount: number, currency: string): string {
   }
 }
 
+function relativeTime(iso: string): string {
+  const diffMs = Date.now() - Date.parse(iso);
+  if (!Number.isFinite(diffMs)) return "recently";
+  const mins = Math.round(diffMs / 60_000);
+  if (mins < 60) return `${Math.max(1, mins)} min ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours} h ago`;
+  const days = Math.round(hours / 24);
+  return `${days} d ago`;
+}
+
+function trendArrow(p: PriceConfidence): string {
+  if (p.trend === "down") return "▼";
+  if (p.trend === "up") return "▲";
+  return "■";
+}
+
 interface Props {
   offer: ScoredOffer;
   tags: Tag[];
   selected: boolean;
+  highlighted?: boolean;
   onToggleSelect: (id: string) => void;
+  onHover?: (id: string | null) => void;
   selectionDisabled: boolean;
 }
 
-export function HotelCard({ offer, tags, selected, onToggleSelect, selectionDisabled }: Props) {
+export function HotelCard({
+  offer,
+  tags,
+  selected,
+  highlighted,
+  onToggleSelect,
+  onHover,
+  selectionDisabled,
+}: Props) {
+  const pc = offer.priceConfidence;
   return (
-    <article className={`card${selected ? " card--selected" : ""}`}>
+    <article
+      className={[
+        "card",
+        selected ? "card--selected" : "",
+        highlighted ? "card--highlighted" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      onMouseEnter={() => onHover?.(offer.id)}
+      onMouseLeave={() => onHover?.(null)}
+    >
       <div className="row">
         <span className="platform">{PLATFORM_LABEL[offer.platform] ?? offer.platform}</span>
         <span className="score" title="Combined value score (0-100)">
@@ -102,10 +141,26 @@ export function HotelCard({ offer, tags, selected, onToggleSelect, selectionDisa
         </a>
       </div>
 
+      {pc && (
+        <div className="confidence">
+          {pc.goodDeal && <span className="badge tag tag--good">Good deal</span>}
+          <span className={`badge confidence-trend confidence-trend--${pc.trend}`}>
+            {trendArrow(pc)} {pc.trend === "stable" ? "stable" : `${pc.trendPercent}% ${pc.trend}`}
+          </span>
+          <span className="confidence-meta">checked {relativeTime(pc.lastCheckedAt)}</span>
+          {pc.averagePrice != null && (
+            <span className="confidence-meta">
+              avg {fmtMoney(pc.averagePrice, offer.totalPrice.currency)}
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="score-bar">
         <span>price {offer.scoreBreakdown.price}</span>
-        <span>convenience {offer.scoreBreakdown.convenience}</span>
+        <span>conv {offer.scoreBreakdown.convenience}</span>
         <span>quality {offer.scoreBreakdown.quality}</span>
+        {offer.scoreBreakdown.bonus !== 0 && <span>bonus {offer.scoreBreakdown.bonus > 0 ? "+" : ""}{offer.scoreBreakdown.bonus}</span>}
       </div>
 
       <label className="select-row">

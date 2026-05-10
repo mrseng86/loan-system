@@ -1,4 +1,5 @@
 import type { HotelOffer } from "./connectors/types";
+import { DEFAULT_INTENT, INTENT_MODES, type IntentId } from "./intent";
 
 export interface ScoredOffer extends HotelOffer {
   score: number;
@@ -6,18 +7,23 @@ export interface ScoredOffer extends HotelOffer {
     price: number;
     convenience: number;
     quality: number;
+    bonus: number;
   };
 }
 
 /**
- * Combined value score (0-100). Higher is better.
+ * Combined value score (0-100). Higher is better. Intent-aware: each travel
+ * mode (family/couple/budget/luxury) tweaks the weights so the same hotel
+ * list is reranked when the user switches mode.
  *
  *   convenience = closer to centre + closer to metro + free cancellation + breakfast
  *   quality     = star rating + review score
  *   price       = inverse of total cost, normalised against the cheapest offer
+ *   bonus       = intent-specific add-ons (family-friendly, flexibility, ...)
  */
-export function scoreOffers(offers: HotelOffer[]): ScoredOffer[] {
+export function scoreOffers(offers: HotelOffer[], intent: IntentId = DEFAULT_INTENT): ScoredOffer[] {
   if (offers.length === 0) return [];
+  const w = INTENT_MODES[intent].weights;
   const cheapest = Math.min(...offers.map((o) => o.totalPrice.amount));
   return offers
     .map((o) => {
@@ -32,14 +38,24 @@ export function scoreOffers(offers: HotelOffer[]): ScoredOffer[] {
       const stars = (o.starRating ?? 3) * 20;
       const reviews = (o.reviewScore ?? 7.5) * 10;
       const quality = stars * 0.4 + reviews * 0.6;
-      const score = Math.round(price * 0.4 + convenience * 0.3 + quality * 0.3);
+
+      let bonus = 0;
+      if (o.familyFriendly) bonus += w.familyBonus;
+      if (o.freeCancellation) bonus += w.flexibilityBonus;
+      if ((o.starRating ?? 3) < 4) bonus -= w.lowStarPenalty;
+
+      const score = Math.round(
+        price * w.price + convenience * w.convenience + quality * w.quality + bonus,
+      );
+
       return {
         ...o,
-        score,
+        score: Math.max(0, Math.min(100, score)),
         scoreBreakdown: {
           price: Math.round(price),
           convenience: Math.round(convenience),
           quality: Math.round(quality),
+          bonus: Math.round(bonus),
         },
       };
     })

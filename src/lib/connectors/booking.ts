@@ -1,4 +1,5 @@
 import type { HotelConnector, HotelOffer, SearchQuery } from "./types";
+import { daysBetween, hashSeed, syntheticCoords, syntheticPriceConfidence } from "./mockHelpers";
 
 /**
  * Booking.com connector (read-only price/availability lookup for comparison).
@@ -32,10 +33,6 @@ export class BookingConnector implements HotelConnector {
   }
 
   private async liveSearch(query: SearchQuery): Promise<HotelOffer[]> {
-    // Booking's real Partner API uses XML/JSON with HTTP basic auth and a
-    // multi-step flow (city autocomplete -> hotel availability -> price).
-    // The skeleton below shows the shape; fill it in once partner credentials
-    // are approved. We only fetch — never POST a booking.
     const auth = Buffer.from(`${this.partnerId}:${this.apiKey}`).toString("base64");
     const url = new URL("https://distribution-xml.booking.com/json/bookings.getHotelAvailabilityV2");
     url.searchParams.set("city", query.destination);
@@ -59,7 +56,7 @@ export class BookingConnector implements HotelConnector {
   }
 
   private mapHotel(h: BookingHotel, query: SearchQuery): HotelOffer {
-    const nights = Math.max(1, daysBetween(query.checkIn, query.checkOut));
+    const nights = daysBetween(query.checkIn, query.checkOut);
     const total = h.price?.total ?? 0;
     const currency = h.price?.currency ?? query.currency ?? "USD";
     return {
@@ -81,14 +78,16 @@ export class BookingConnector implements HotelConnector {
   }
 
   private mockSearch(query: SearchQuery): HotelOffer[] {
-    const nights = Math.max(1, daysBetween(query.checkIn, query.checkOut));
+    const nights = daysBetween(query.checkIn, query.checkOut);
     const seeds = ["Grand", "Royal", "Harbor", "Garden", "Sky"];
     return seeds.map((name, idx) => {
+      const id = `booking:mock-${idx}`;
       const nightly = 110 + idx * 25 + (hashSeed(query.destination, idx) % 30);
       const total = nightly * nights;
       const free = idx % 2 === 0;
+      const distanceKm = 0.4 + idx * 0.6;
       return {
-        id: `booking:mock-${idx}`,
+        id,
         platform: "booking",
         hotelName: `${name} Hotel ${query.destination}`,
         thumbnail: undefined,
@@ -98,7 +97,7 @@ export class BookingConnector implements HotelConnector {
         address: `${query.destination} city center`,
         totalPrice: { amount: total, currency: query.currency ?? "USD" },
         perNightPrice: { amount: nightly, currency: query.currency ?? "USD" },
-        distanceKm: 0.4 + idx * 0.6,
+        distanceKm,
         metroDistanceKm: 0.2 + idx * 0.3,
         nearestLandmark: `${query.destination} Central Station`,
         landmarkDistanceKm: 0.5 + idx * 0.4,
@@ -107,6 +106,8 @@ export class BookingConnector implements HotelConnector {
         cancellationKind: free ? "free" : "non_refundable",
         breakfastIncluded: idx % 3 === 0,
         familyFriendly: idx === 1 || idx === 4,
+        coords: syntheticCoords(id, distanceKm),
+        priceConfidence: syntheticPriceConfidence(id, total, query.checkIn),
         sourceUrl: `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(query.destination)}`,
         isMock: true,
       };
@@ -131,19 +132,4 @@ interface BookingHotel {
   is_free_cancellable?: boolean;
   is_breakfast_included?: boolean;
   url: string;
-}
-
-function daysBetween(checkIn: string, checkOut: string): number {
-  const a = Date.parse(checkIn);
-  const b = Date.parse(checkOut);
-  if (Number.isNaN(a) || Number.isNaN(b)) return 1;
-  return Math.round((b - a) / 86_400_000);
-}
-
-function hashSeed(s: string, salt: number): number {
-  let h = salt + 1;
-  for (let i = 0; i < s.length; i++) {
-    h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  }
-  return h;
 }

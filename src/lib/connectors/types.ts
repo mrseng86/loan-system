@@ -27,6 +27,29 @@ export interface Money {
 
 export type CancellationPolicy = "free" | "partial" | "non_refundable" | "unknown";
 
+export type PriceTrend = "up" | "down" | "stable";
+
+export interface PriceConfidence {
+  /** ISO timestamp when this offer's price was last verified. */
+  lastCheckedAt: string;
+  /** Direction the price has moved over the last few days. */
+  trend: PriceTrend;
+  /** Magnitude of the trend in percent (positive number). */
+  trendPercent?: number;
+  /** True when the current price is meaningfully below the typical range. */
+  goodDeal?: boolean;
+  /** Typical total-stay price for this hotel/window, used for context. */
+  averagePrice?: number;
+}
+
+/** Synthetic 2-D coordinates for the schematic map view. */
+export interface MapPoint {
+  /** Approximate latitude, only used for relative placement on the map view. */
+  lat: number;
+  /** Approximate longitude, only used for relative placement on the map view. */
+  lng: number;
+}
+
 export interface HotelOffer {
   /** Stable per-platform hotel id, namespaced by platform name. */
   id: string;
@@ -56,6 +79,10 @@ export interface HotelOffer {
   breakfastIncluded?: boolean;
   /** Family-friendly heuristic (multi-bed rooms, kid amenities, etc.). */
   familyFriendly?: boolean;
+  /** Approximate map coordinates for the schematic split list/map view. */
+  coords?: MapPoint;
+  /** Price confidence signals (last checked, trend, good-deal flag). */
+  priceConfidence?: PriceConfidence;
   /** Outbound link to the source page on the original platform. */
   sourceUrl: string;
   /** True if data came from a mock fallback rather than a live API. */

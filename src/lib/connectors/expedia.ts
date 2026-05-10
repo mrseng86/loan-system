@@ -1,4 +1,5 @@
 import type { HotelConnector, HotelOffer, SearchQuery } from "./types";
+import { daysBetween, syntheticCoords, syntheticPriceConfidence } from "./mockHelpers";
 
 /**
  * Expedia Rapid (EPS) connector stub (read-only lookup for comparison).
@@ -22,13 +23,15 @@ export class ExpediaConnector implements HotelConnector {
       // TODO: implement EPS /shopping/v3/properties/availability with HMAC auth.
       return [];
     }
-    const nights = Math.max(1, days(query.checkIn, query.checkOut));
+    const nights = daysBetween(query.checkIn, query.checkOut);
     return ["Hilton", "Marriott", "Hyatt"].map((brand, i) => {
+      const id = `expedia:mock-${i}`;
       const nightly = 130 + i * 35;
       const total = nightly * nights;
       const free = i === 1;
+      const distanceKm = 1.2 + i * 0.4;
       return {
-        id: `expedia:mock-${i}`,
+        id,
         platform: "expedia",
         hotelName: `${brand} ${query.destination}`,
         starRating: 4 + (i % 2),
@@ -37,7 +40,7 @@ export class ExpediaConnector implements HotelConnector {
         address: `${query.destination} airport area`,
         totalPrice: { amount: total, currency: query.currency ?? "USD" },
         perNightPrice: { amount: nightly, currency: query.currency ?? "USD" },
-        distanceKm: 1.2 + i * 0.4,
+        distanceKm,
         metroDistanceKm: 0.7 + i * 0.5,
         nearestLandmark: `${query.destination} International Airport`,
         landmarkDistanceKm: 2.0 + i * 1.5,
@@ -46,14 +49,11 @@ export class ExpediaConnector implements HotelConnector {
         cancellationKind: free ? "free" : "non_refundable",
         breakfastIncluded: i !== 2,
         familyFriendly: i === 0,
+        coords: syntheticCoords(id, distanceKm),
+        priceConfidence: syntheticPriceConfidence(id, total, query.checkIn),
         sourceUrl: `https://www.expedia.com/Hotel-Search?destination=${encodeURIComponent(query.destination)}`,
         isMock: true,
       };
     });
   }
-}
-
-function days(a: string, b: string): number {
-  const ms = Date.parse(b) - Date.parse(a);
-  return Number.isFinite(ms) ? Math.round(ms / 86_400_000) : 1;
 }

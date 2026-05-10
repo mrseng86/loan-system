@@ -1,4 +1,5 @@
 import type { HotelConnector, HotelOffer, SearchQuery } from "./types";
+import { daysBetween, syntheticCoords, syntheticPriceConfidence } from "./mockHelpers";
 
 /**
  * Trip.com (Ctrip) connector stub (read-only lookup for comparison).
@@ -22,13 +23,15 @@ export class TripConnector implements HotelConnector {
       // TODO: call Trip Open Platform /hotel/search with signed payload.
       return [];
     }
-    const nights = Math.max(1, days(query.checkIn, query.checkOut));
+    const nights = daysBetween(query.checkIn, query.checkOut);
     return ["如家", "锦江", "汉庭"].map((seed, i) => {
+      const id = `trip:mock-${i}`;
       const nightly = 78 + i * 22;
       const total = nightly * nights;
       const free = i % 2 === 1;
+      const distanceKm = 0.3 + i * 0.7;
       return {
-        id: `trip:mock-${i}`,
+        id,
         platform: "trip",
         hotelName: `${seed} ${query.destination}`,
         starRating: 3 + (i % 2),
@@ -37,7 +40,7 @@ export class TripConnector implements HotelConnector {
         address: `${query.destination} 市中心`,
         totalPrice: { amount: total, currency: query.currency ?? "CNY" },
         perNightPrice: { amount: nightly, currency: query.currency ?? "CNY" },
-        distanceKm: 0.3 + i * 0.7,
+        distanceKm,
         metroDistanceKm: 0.15 + i * 0.25,
         nearestLandmark: `${query.destination} 火车站`,
         landmarkDistanceKm: 0.4 + i * 0.5,
@@ -46,14 +49,11 @@ export class TripConnector implements HotelConnector {
         cancellationKind: free ? "free" : "non_refundable",
         breakfastIncluded: i === 1,
         familyFriendly: i === 0,
+        coords: syntheticCoords(id, distanceKm),
+        priceConfidence: syntheticPriceConfidence(id, total, query.checkIn),
         sourceUrl: `https://hotels.trip.com/hotels/list?city=${encodeURIComponent(query.destination)}`,
         isMock: true,
       };
     });
   }
-}
-
-function days(a: string, b: string): number {
-  const ms = Date.parse(b) - Date.parse(a);
-  return Number.isFinite(ms) ? Math.round(ms / 86_400_000) : 1;
 }

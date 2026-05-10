@@ -12,7 +12,7 @@ export function RecommendationSummary({ recommendation, offers }: Props) {
     <section className="reco">
       <div className="reco-tag">Smart summary · rule-based</div>
       <h3>{recommendation.headline}</h3>
-      <p className="muted">{recommendation.summary}</p>
+      <p className="reco-prose">{recommendation.summary}</p>
       <ul className="reco-picks">
         {recommendation.picks.map((p) => {
           const offer = byId.get(p.offerId);
@@ -26,7 +26,7 @@ export function RecommendationSummary({ recommendation, offers }: Props) {
         })}
       </ul>
       <p className="reco-disclaimer">
-        Heuristic only — this app does not book or charge anything. Always verify
+        Heuristic summary — this app does not book or charge anything. Always verify
         details on the original platform before deciding.
       </p>
     </section>
