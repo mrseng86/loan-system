@@ -4,35 +4,50 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#000000" />
-  <title>拍照 App</title>
-  <link rel="stylesheet" href="style.css?v=5" />
+  <title>网美拍照辅助</title>
+  <link rel="stylesheet" href="style.css?v=6" />
 </head>
 <body>
   <main id="app">
     <section id="home" class="screen">
-      <h1>拍照 App</h1>
-      <p>点下面按钮调用相机拍照</p>
-
-      <label class="primary big">
-        📷 拍照
-        <input id="capture-input" type="file" accept="image/*" capture="environment" hidden />
-      </label>
-
-      <label class="secondary">
-        🖼 从相册选
-        <input id="gallery-input" type="file" accept="image/*" hidden />
-      </label>
+      <h1>📸 网美拍照辅助</h1>
+      <p class="subtitle">叠加构图线和姿势引导，再也不会被嫌弃不会拍</p>
+      <button id="start-btn" class="primary big">开启相机</button>
+      <p id="error" class="error" hidden></p>
+      <p class="hint">实时预览失败？<button type="button" id="fallback-btn" class="link">用系统相机拍</button></p>
+      <input id="capture-input" type="file" accept="image/*" capture="environment" hidden />
     </section>
 
-    <section id="preview" class="screen" hidden>
+    <section id="camera" class="screen camera-screen" hidden>
+      <video id="video" autoplay playsinline webkit-playsinline muted></video>
+      <svg id="overlay" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+      <canvas id="canvas" hidden></canvas>
+
+      <div class="top-bar">
+        <button id="close-btn" class="icon-btn" aria-label="关闭">✕</button>
+        <div class="tip" id="tip"></div>
+      </div>
+
+      <div class="poses-bar">
+        <div class="poses-scroll" id="poses-scroll"></div>
+      </div>
+
+      <div class="controls">
+        <button id="switch-btn" class="icon-btn" aria-label="切换摄像头">⟳</button>
+        <button id="shutter-btn" class="shutter" aria-label="拍照"></button>
+        <button id="grid-btn" class="icon-btn" aria-label="切换网格">⊞</button>
+      </div>
+    </section>
+
+    <section id="preview" class="screen preview-screen" hidden>
       <img id="preview-img" alt="预览" />
       <div class="preview-controls">
         <button id="retake-btn">重拍</button>
-        <a id="save-btn" class="primary" download="photo.jpg">保存到相册</a>
+        <a id="save-btn" class="primary" download="photo.jpg">保存</a>
       </div>
     </section>
   </main>
 
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>
