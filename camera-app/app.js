@@ -16,6 +16,24 @@ let stream = null;
 let facingMode = "environment";
 let lastPhotoDataUrl = null;
 
+function withTimeout(promise, ms, label) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(label + " 超时（" + ms + "ms）"));
+    }, ms);
+    promise.then(
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(timer);
+        reject(e);
+      }
+    );
+  });
+}
+
 async function startCamera() {
   errorEl.hidden = true;
   startBtn.disabled = true;
@@ -35,15 +53,18 @@ async function startCamera() {
     stopStream();
 
     const constraintsList = [
-      { video: { facingMode: { exact: facingMode } }, audio: false },
-      { video: { facingMode: facingMode }, audio: false },
       { video: true, audio: false },
+      { video: { facingMode: facingMode }, audio: false },
     ];
 
     let lastErr = null;
     for (const constraints of constraintsList) {
       try {
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        stream = await withTimeout(
+          navigator.mediaDevices.getUserMedia(constraints),
+          8000,
+          "相机请求"
+        );
         lastErr = null;
         break;
       } catch (err) {
@@ -61,7 +82,7 @@ async function startCamera() {
       } else if (err.name === "NotReadableError") {
         showError("相机被其他应用占用，请关闭后重试。");
       } else {
-        showError("无法启动相机 [" + err.name + "]：" + (err.message || ""));
+        showError("无法启动相机 [" + (err.name || "Error") + "]：" + (err.message || ""));
       }
       return;
     }
@@ -76,9 +97,9 @@ async function startCamera() {
     cameraScreen.hidden = false;
 
     try {
-      await video.play();
+      await withTimeout(video.play(), 5000, "视频播放");
     } catch (err) {
-      showError("视频播放失败 [" + err.name + "]：" + (err.message || "") + "（点屏幕再试）");
+      showError("视频播放失败 [" + (err.name || "Error") + "]：" + (err.message || "") + "（点屏幕再试）");
     }
   } catch (err) {
     showError("意外错误 [" + (err.name || "Error") + "]：" + (err.message || String(err)));
