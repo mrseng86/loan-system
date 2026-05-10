@@ -5,37 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#000000" />
   <title>拍照 App</title>
-  <link rel="stylesheet" href="style.css?v=4" />
+  <link rel="stylesheet" href="style.css?v=5" />
 </head>
 <body>
   <main id="app">
-    <section id="permission" class="screen">
+    <section id="home" class="screen">
       <h1>拍照 App</h1>
-      <p>需要访问你的相机才能拍照。</p>
-      <button id="start-btn" class="primary">开启相机</button>
-      <p id="error" class="error" hidden></p>
+      <p>点下面按钮调用相机拍照</p>
+
+      <label class="primary big">
+        📷 拍照
+        <input id="capture-input" type="file" accept="image/*" capture="environment" hidden />
+      </label>
+
+      <label class="secondary">
+        🖼 从相册选
+        <input id="gallery-input" type="file" accept="image/*" hidden />
+      </label>
     </section>
 
-    <section id="camera" class="screen" hidden>
-      <video id="video" autoplay playsinline webkit-playsinline muted></video>
-      <canvas id="canvas" hidden></canvas>
-
-      <div class="controls">
-        <button id="switch-btn" class="icon-btn" aria-label="切换摄像头">⟳</button>
-        <button id="shutter-btn" class="shutter" aria-label="拍照"></button>
-        <a id="download-btn" class="icon-btn" aria-label="下载" hidden download="photo.png">⬇</a>
-      </div>
-
-      <div id="preview" hidden>
-        <img id="preview-img" alt="预览" />
-        <div class="preview-controls">
-          <button id="retake-btn">重拍</button>
-          <button id="save-btn" class="primary">保存</button>
-        </div>
+    <section id="preview" class="screen" hidden>
+      <img id="preview-img" alt="预览" />
+      <div class="preview-controls">
+        <button id="retake-btn">重拍</button>
+        <a id="save-btn" class="primary" download="photo.jpg">保存到相册</a>
       </div>
     </section>
   </main>
 
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>
