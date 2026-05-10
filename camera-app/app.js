@@ -17,59 +17,75 @@ let facingMode = "environment";
 let lastPhotoDataUrl = null;
 
 async function startCamera() {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    showError("当前浏览器不支持相机访问。请使用 Safari 或 Chrome。");
-    return;
-  }
-
-  stopStream();
-
-  const constraintsList = [
-    { video: { facingMode: { exact: facingMode } }, audio: false },
-    { video: { facingMode: facingMode }, audio: false },
-    { video: true, audio: false },
-  ];
-
-  let lastErr = null;
-  for (const constraints of constraintsList) {
-    try {
-      stream = await navigator.mediaDevices.getUserMedia(constraints);
-      lastErr = null;
-      break;
-    } catch (err) {
-      lastErr = err;
-    }
-  }
-
-  if (lastErr || !stream) {
-    const err = lastErr || new Error("unknown");
-    if (err.name === "NotAllowedError") {
-      showError("相机权限被拒绝。请到浏览器设置中允许访问相机。");
-    } else if (err.name === "NotFoundError") {
-      showError("没有找到相机设备。");
-    } else if (err.name === "NotReadableError") {
-      showError("相机被其他应用占用。");
-    } else {
-      showError("无法启动相机：" + (err.message || err.name));
-    }
-    return;
-  }
-
-  video.srcObject = stream;
-  video.setAttribute("playsinline", "true");
-  video.setAttribute("webkit-playsinline", "true");
-  video.muted = true;
+  errorEl.hidden = true;
+  startBtn.disabled = true;
+  const originalLabel = startBtn.textContent;
+  startBtn.textContent = "启动中...";
 
   try {
-    await video.play();
-  } catch (err) {
-    showError("视频播放失败：" + (err.message || err.name) + "（请点击屏幕一次再试）");
-    return;
-  }
+    if (!window.isSecureContext) {
+      showError("页面不在 HTTPS 下，浏览器禁止访问相机。请用 https:// 打开。");
+      return;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showError("当前浏览器不支持相机访问。请使用 Safari 或 Chrome。");
+      return;
+    }
 
-  permissionScreen.hidden = true;
-  cameraScreen.hidden = false;
-  errorEl.hidden = true;
+    stopStream();
+
+    const constraintsList = [
+      { video: { facingMode: { exact: facingMode } }, audio: false },
+      { video: { facingMode: facingMode }, audio: false },
+      { video: true, audio: false },
+    ];
+
+    let lastErr = null;
+    for (const constraints of constraintsList) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        lastErr = null;
+        break;
+      } catch (err) {
+        lastErr = err;
+        if (err.name === "NotAllowedError") break;
+      }
+    }
+
+    if (lastErr || !stream) {
+      const err = lastErr || new Error("unknown");
+      if (err.name === "NotAllowedError") {
+        showError("相机权限被拒绝。请到 设置 → Safari → 相机 允许，或重新加载页面再试。");
+      } else if (err.name === "NotFoundError") {
+        showError("没有找到相机设备。");
+      } else if (err.name === "NotReadableError") {
+        showError("相机被其他应用占用，请关闭后重试。");
+      } else {
+        showError("无法启动相机 [" + err.name + "]：" + (err.message || ""));
+      }
+      return;
+    }
+
+    video.srcObject = stream;
+    video.setAttribute("playsinline", "true");
+    video.setAttribute("webkit-playsinline", "true");
+    video.muted = true;
+    video.playsInline = true;
+
+    permissionScreen.hidden = true;
+    cameraScreen.hidden = false;
+
+    try {
+      await video.play();
+    } catch (err) {
+      showError("视频播放失败 [" + err.name + "]：" + (err.message || "") + "（点屏幕再试）");
+    }
+  } catch (err) {
+    showError("意外错误 [" + (err.name || "Error") + "]：" + (err.message || String(err)));
+  } finally {
+    startBtn.disabled = false;
+    startBtn.textContent = originalLabel;
+  }
 }
 
 function stopStream() {
