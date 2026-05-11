@@ -367,6 +367,289 @@ const GUIDES = [
       <circle cx="50" cy="78" r="0.8" fill="#ffd700" opacity="0.85"/>
     `,
   },
+  // ============== 女友视角 / 男友必学 ==============
+  {
+    id: "low-feet",
+    name: "低机位脚尖",
+    tip: "蹲到脚踝高度，镜头对脚尖向上拍，腿占画面 2/3",
+    svg: `
+      <text x="50" y="10" text-anchor="middle" fill="white" font-size="2.2" opacity="0.7">↑ 仰拍脚踝高</text>
+      <line x1="0" y1="33.3" x2="100" y2="33.3" stroke="white" stroke-width="0.15" stroke-dasharray="1 1" opacity="0.4"/>
+      <ellipse cx="50" cy="20" rx="2.4" ry="2.4" ${FIGURE_STYLE}/>
+      <path d="M 50 22 L 50 25" ${FIGURE_LINE}/>
+      <!-- 缩小上身 -->
+      <path d="M 47 25 L 53 25 L 52 33 L 48 33 Z" ${FIGURE_STYLE}/>
+      <path d="M 48 33 L 52 33 L 54 40 L 46 40 Z" ${FIGURE_STYLE}/>
+      <!-- 放大的腿（占画面 2/3） -->
+      <path d="M 47 40 Q 38 70 32 100 L 24 100 Q 32 65 44 40 Z" ${FIGURE_STYLE}/>
+      <path d="M 53 40 Q 62 70 68 100 L 76 100 Q 68 65 56 40 Z" ${FIGURE_STYLE}/>
+      <text x="50" y="80" text-anchor="middle" fill="#ffd700" font-size="2.4" opacity="0.85">腿占 2/3</text>
+    `,
+  },
+  {
+    id: "top-bottom",
+    name: "顶天立地",
+    tip: "头贴顶、脚踩底，把人拉满整个画面竖屏",
+    svg: `
+      <rect x="20" y="0" width="60" height="100" fill="none" stroke="#ffd700" stroke-width="0.4"/>
+      <text x="50" y="10" text-anchor="middle" fill="#ffd700" font-size="2.4">头贴顶 ↑</text>
+      <ellipse cx="50" cy="6" rx="3.5" ry="4" ${FIGURE_STYLE}/>
+      <path d="M 50 10 L 50 13" ${FIGURE_LINE}/>
+      <path d="M 44 13 L 56 13 L 54 38 L 46 38 Z" ${FIGURE_STYLE}/>
+      <path d="M 46 38 L 54 38 L 56 52 L 44 52 Z" ${FIGURE_STYLE}/>
+      <path d="M 47 52 L 46 99 L 44 99 L 43 52 Z" ${FIGURE_STYLE}/>
+      <path d="M 53 52 L 54 99 L 56 99 L 57 52 Z" ${FIGURE_STYLE}/>
+      <path d="M 44 15 L 38 48 L 40 48 L 46 16 Z" ${FIGURE_STYLE}/>
+      <path d="M 56 15 L 62 48 L 60 48 L 54 16 Z" ${FIGURE_STYLE}/>
+      <text x="50" y="98" text-anchor="middle" fill="#ffd700" font-size="2.4">↓ 脚踩底</text>
+    `,
+  },
+  {
+    id: "jump",
+    name: "一字马跳跃",
+    tip: "起跳瞬间连拍，膝盖伸直脚尖绷直",
+    svg: `
+      <text x="50" y="10" text-anchor="middle" fill="white" font-size="2.2" opacity="0.7">📸 连拍模式</text>
+      <line x1="0" y1="80" x2="100" y2="80" stroke="#ffd700" stroke-width="0.3" stroke-dasharray="1 1" opacity="0.5"/>
+      <text x="2" y="79" fill="#ffd700" font-size="2.2" opacity="0.7">地面</text>
+      <!-- 跳跃中的人，腿张开 -->
+      <ellipse cx="50" cy="28" rx="3.5" ry="3.5" ${FIGURE_STYLE}/>
+      <path d="M 44 32 L 56 32 L 54 50 L 46 50 Z" ${FIGURE_STYLE}/>
+      <path d="M 46 50 L 54 50 L 56 60 L 44 60 Z" ${FIGURE_STYLE}/>
+      <!-- 一字马腿 -->
+      <path d="M 48 60 L 24 70 L 22 73 L 47 62 Z" ${FIGURE_STYLE}/>
+      <path d="M 52 60 L 76 70 L 78 73 L 53 62 Z" ${FIGURE_STYLE}/>
+      <!-- 张开的手臂 -->
+      <path d="M 44 34 L 28 26 L 26 28 L 43 36 Z" ${FIGURE_STYLE}/>
+      <path d="M 56 34 L 72 26 L 74 28 L 57 36 Z" ${FIGURE_STYLE}/>
+    `,
+  },
+  {
+    id: "half-cover",
+    name: "半遮脸",
+    tip: "手 / 帽檐 / 书挡住半张脸，只露眼睛和额头",
+    svg: `
+      <line x1="0" y1="33.3" x2="100" y2="33.3" stroke="#ffd700" stroke-width="0.3" opacity="0.7"/>
+      <ellipse cx="50" cy="42" rx="18" ry="22" ${FIGURE_STYLE}/>
+      <!-- 遮挡物（手） -->
+      <path d="M 30 38 L 78 32 L 80 50 L 32 56 Z" fill="rgba(255,255,255,0.18)" stroke="white" stroke-width="0.35" stroke-dasharray="1.4 0.9" opacity="0.85"/>
+      <text x="60" y="45" fill="#ffd700" font-size="2.4" opacity="0.85">遮</text>
+      <!-- 露出的眼睛 -->
+      <circle cx="42" cy="36" r="1" fill="#ffd700"/>
+      <text x="20" y="36" fill="#ffd700" font-size="2.2" opacity="0.85">露眼</text>
+      <path d="M 25 75 Q 30 65 50 65 Q 70 65 75 75 L 80 98 L 20 98 Z" ${FIGURE_STYLE}/>
+    `,
+  },
+  {
+    id: "fingers",
+    name: "指缝看",
+    tip: "手指张开放眼前，对焦瞳孔，背景虚化",
+    svg: `
+      <ellipse cx="50" cy="44" rx="20" ry="26" ${FIGURE_STYLE}/>
+      <text x="50" y="10" text-anchor="middle" fill="white" font-size="2.2" opacity="0.7">对焦眼睛 · 背景虚化</text>
+      <!-- 五指张开 -->
+      <path d="M 32 70 L 30 38 L 33 38 L 35 70 Z" ${FIGURE_STYLE}/>
+      <path d="M 40 70 L 39 32 L 42 32 L 43 70 Z" ${FIGURE_STYLE}/>
+      <path d="M 48 70 L 48 30 L 51 30 L 51 70 Z" ${FIGURE_STYLE}/>
+      <path d="M 56 70 L 57 32 L 60 32 L 59 70 Z" ${FIGURE_STYLE}/>
+      <path d="M 64 70 L 66 38 L 69 38 L 67 70 Z" ${FIGURE_STYLE}/>
+      <path d="M 30 70 L 70 70 L 75 80 L 25 80 Z" ${FIGURE_STYLE}/>
+      <!-- 指缝间的眼 -->
+      <circle cx="45" cy="40" r="1.2" fill="#ffd700"/>
+      <circle cx="55" cy="40" r="1.2" fill="#ffd700"/>
+    `,
+  },
+  {
+    id: "hair-turn",
+    name: "撩发回头",
+    tip: "让她边撩头发边慢转头，抓中途的侧脸",
+    svg: `
+      <line x1="0" y1="33.3" x2="100" y2="33.3" stroke="#ffd700" stroke-width="0.3" opacity="0.7"/>
+      <text x="50" y="10" text-anchor="middle" fill="white" font-size="2.2" opacity="0.7">📸 抓拍中途瞬间</text>
+      <!-- 侧脸 -->
+      <path d="M 38 28 Q 36 18 50 14 Q 60 14 62 28 Q 60 42 50 44 Q 40 44 38 32 Z" ${FIGURE_STYLE}/>
+      <!-- 头发飘起 -->
+      <path d="M 38 22 Q 26 28 22 45 Q 28 42 38 38" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="0.35" stroke-dasharray="1.4 0.9" opacity="0.85"/>
+      <!-- 手撩发 -->
+      <path d="M 30 42 Q 25 32 28 22 L 32 22 Q 30 30 33 42 Z" ${FIGURE_STYLE}/>
+      <text x="20" y="20" fill="#ffd700" font-size="2.2" opacity="0.85">手撩 ↗</text>
+      <path d="M 40 48 L 60 48 L 58 75 L 42 75 Z" ${FIGURE_STYLE}/>
+      <path d="M 42 75 L 58 75 L 62 95 L 38 95 Z" ${FIGURE_STYLE}/>
+    `,
+  },
+  {
+    id: "stairs",
+    name: "楼梯回望",
+    tip: "她上两级台阶后回头，你蹲低仰拍",
+    svg: `
+      <text x="50" y="10" text-anchor="middle" fill="white" font-size="2.2" opacity="0.7">↑ 仰拍 + 回头</text>
+      <!-- 台阶线 -->
+      <path d="M 5 95 L 30 95 L 30 80 L 55 80 L 55 65 L 80 65 L 80 50 L 95 50" fill="none" stroke="white" stroke-width="0.4" opacity="0.5" stroke-dasharray="1.5 1"/>
+      <text x="20" y="93" fill="white" font-size="1.8" opacity="0.5">台阶</text>
+      <!-- 人在第三级台阶 -->
+      <ellipse cx="60" cy="38" rx="3" ry="3" ${FIGURE_STYLE}/>
+      <path d="M 60 41 L 60 43" ${FIGURE_LINE}/>
+      <path d="M 55 43 L 65 43 L 63 58 L 57 58 Z" ${FIGURE_STYLE}/>
+      <path d="M 57 58 L 63 58 L 65 65 L 55 65 Z" ${FIGURE_STYLE}/>
+      <path d="M 58 65 L 57 80 L 55 80 L 56 65 Z" ${FIGURE_STYLE}/>
+      <path d="M 62 65 L 63 80 L 65 80 L 64 65 Z" ${FIGURE_STYLE}/>
+      <text x="65" y="32" fill="#ffd700" font-size="2.2" opacity="0.85">回头 ↘</text>
+    `,
+  },
+  {
+    id: "mirror",
+    name: "镜中对视",
+    tip: "拍镜子里的她，你出现在镜面边缘",
+    svg: `
+      <!-- 镜框 -->
+      <rect x="15" y="10" width="70" height="80" fill="rgba(255,255,255,0.04)" stroke="white" stroke-width="0.5" opacity="0.7"/>
+      <text x="50" y="8" text-anchor="middle" fill="white" font-size="2" opacity="0.7">镜子</text>
+      <!-- 她（镜中央） -->
+      <ellipse cx="42" cy="30" rx="4" ry="4" ${FIGURE_STYLE}/>
+      <path d="M 36 35 L 48 35 L 46 55 L 38 55 Z" ${FIGURE_STYLE}/>
+      <path d="M 38 55 L 46 55 L 48 75 L 36 75 Z" ${FIGURE_STYLE}/>
+      <!-- 她手举手机 -->
+      <path d="M 36 36 L 30 50 L 32 50 L 38 38 Z" ${FIGURE_STYLE}/>
+      <rect x="26" y="46" width="6" height="9" fill="rgba(255,215,0,0.4)" stroke="#ffd700" stroke-width="0.3"/>
+      <!-- 你（镜面边缘） -->
+      <ellipse cx="72" cy="36" rx="3.5" ry="3.5" stroke="white" stroke-width="0.3" stroke-dasharray="0.8 0.6" fill="rgba(255,255,255,0.05)" opacity="0.7"/>
+      <path d="M 67 40 L 77 40 L 76 60 L 68 60 Z" stroke="white" stroke-width="0.3" stroke-dasharray="0.8 0.6" fill="rgba(255,255,255,0.05)" opacity="0.7"/>
+      <text x="72" y="78" text-anchor="middle" fill="#ffd700" font-size="2" opacity="0.85">你</text>
+    `,
+  },
+  {
+    id: "cup",
+    name: "咖啡杯遮嘴",
+    tip: "双手捧杯挡下半脸，眼神望向窗外",
+    svg: `
+      <line x1="0" y1="33.3" x2="100" y2="33.3" stroke="#ffd700" stroke-width="0.3" opacity="0.7"/>
+      <text x="50" y="10" text-anchor="middle" fill="white" font-size="2.2" opacity="0.7">眼神看窗外 →</text>
+      <ellipse cx="50" cy="35" rx="14" ry="18" ${FIGURE_STYLE}/>
+      <!-- 杯子盖住下半脸 -->
+      <ellipse cx="50" cy="52" rx="13" ry="4" fill="rgba(255,255,255,0.18)" stroke="white" stroke-width="0.5" opacity="0.9"/>
+      <path d="M 37 52 L 39 72 Q 42 76 50 76 Q 58 76 61 72 L 63 52 Z" fill="rgba(255,255,255,0.18)" stroke="white" stroke-width="0.4" opacity="0.85"/>
+      <text x="50" y="65" text-anchor="middle" fill="#ffd700" font-size="2.2">☕</text>
+      <!-- 露眼睛 -->
+      <circle cx="44" cy="32" r="1" fill="#ffd700"/>
+      <circle cx="56" cy="32" r="1" fill="#ffd700"/>
+      <!-- 肩 -->
+      <path d="M 30 80 Q 35 75 50 75 Q 65 75 70 80 L 75 98 L 25 98 Z" ${FIGURE_STYLE}/>
+    `,
+  },
+  {
+    id: "beach",
+    name: "海边踢浪",
+    tip: "逆光蹲拍，等浪花溅起按连拍",
+    svg: `
+      <text x="50" y="10" text-anchor="middle" fill="white" font-size="2.2" opacity="0.7">📸 连拍 · 逆光</text>
+      <!-- 海平面 -->
+      <line x1="0" y1="65" x2="100" y2="65" stroke="white" stroke-width="0.4" opacity="0.5"/>
+      <text x="5" y="63" fill="white" font-size="1.8" opacity="0.5">海平线</text>
+      <!-- 浪花 -->
+      <path d="M 25 85 Q 30 78 35 85 Q 40 82 45 88" fill="none" stroke="white" stroke-width="0.5" opacity="0.7"/>
+      <path d="M 28 92 Q 32 88 36 92 Q 40 89 45 93" fill="none" stroke="white" stroke-width="0.3" opacity="0.5"/>
+      <text x="35" y="75" fill="#ffd700" font-size="2.2" opacity="0.85">浪 💦</text>
+      <!-- 人在中间，一脚抬起 -->
+      <ellipse cx="58" cy="30" rx="3.5" ry="3.5" ${FIGURE_STYLE}/>
+      <path d="M 58 33 L 58 36" ${FIGURE_LINE}/>
+      <path d="M 52 36 L 64 36 L 62 56 L 54 56 Z" ${FIGURE_STYLE}/>
+      <path d="M 54 56 L 62 56 L 64 68 L 52 68 Z" ${FIGURE_STYLE}/>
+      <!-- 站立腿 -->
+      <path d="M 60 68 L 60 95 L 58 95 L 58 68 Z" ${FIGURE_STYLE}/>
+      <!-- 抬起的腿（踢） -->
+      <path d="M 54 68 Q 44 75 36 84 L 38 87 Q 48 78 56 68 Z" ${FIGURE_STYLE}/>
+      <!-- 手臂 -->
+      <path d="M 52 38 L 48 55 L 50 55 L 54 39 Z" ${FIGURE_STYLE}/>
+      <path d="M 64 38 L 70 50 L 72 50 L 66 39 Z" ${FIGURE_STYLE}/>
+    `,
+  },
+  {
+    id: "lay-grass",
+    name: "草地躺拍",
+    tip: "你站她躺，垂直俯拍，发丝散开摆放",
+    svg: `
+      <text x="50" y="10" text-anchor="middle" fill="white" font-size="2.2" opacity="0.7">↓ 垂直俯拍</text>
+      <!-- 横着的人 -->
+      <ellipse cx="50" cy="32" rx="6" ry="6" ${FIGURE_STYLE}/>
+      <!-- 发丝散开 -->
+      <path d="M 44 30 Q 30 25 22 20" fill="none" stroke="white" stroke-width="0.3" stroke-dasharray="1.4 0.9" opacity="0.85"/>
+      <path d="M 44 32 Q 28 32 18 30" fill="none" stroke="white" stroke-width="0.3" stroke-dasharray="1.4 0.9" opacity="0.85"/>
+      <path d="M 44 34 Q 28 38 20 42" fill="none" stroke="white" stroke-width="0.3" stroke-dasharray="1.4 0.9" opacity="0.85"/>
+      <text x="22" y="48" fill="#ffd700" font-size="2" opacity="0.85">发散开</text>
+      <!-- 身体横躺 -->
+      <path d="M 56 28 L 56 36 L 78 38 L 78 26 Z" ${FIGURE_STYLE}/>
+      <path d="M 78 26 L 78 38 L 95 36 L 95 28 Z" ${FIGURE_STYLE}/>
+      <!-- 手放胸前 -->
+      <path d="M 62 35 L 68 50 L 70 50 L 64 35 Z" ${FIGURE_STYLE}/>
+    `,
+  },
+  {
+    id: "flowers",
+    name: "抱花回眸",
+    tip: "怀抱花束半侧身，回头瞬间抓拍",
+    svg: `
+      <line x1="0" y1="33.3" x2="100" y2="33.3" stroke="#ffd700" stroke-width="0.3" opacity="0.7"/>
+      <text x="50" y="10" text-anchor="middle" fill="white" font-size="2.2" opacity="0.7">📸 抓拍回眸</text>
+      <!-- 侧身头 -->
+      <ellipse cx="48" cy="18" rx="4" ry="4.5" ${FIGURE_STYLE} transform="rotate(15 48 18)"/>
+      <!-- 身体（侧身） -->
+      <path d="M 42 23 L 56 23 L 58 50 L 44 50 Z" ${FIGURE_STYLE} transform="rotate(8 50 35)"/>
+      <path d="M 44 50 L 58 50 L 60 70 L 42 70 Z" ${FIGURE_STYLE}/>
+      <!-- 花束 -->
+      <circle cx="55" cy="48" r="6" fill="rgba(255,215,0,0.25)" stroke="#ffd700" stroke-width="0.4" opacity="0.85"/>
+      <circle cx="52" cy="45" r="2" fill="#ffd700" opacity="0.6"/>
+      <circle cx="58" cy="45" r="2" fill="#ffd700" opacity="0.6"/>
+      <circle cx="55" cy="50" r="2" fill="#ffd700" opacity="0.6"/>
+      <text x="68" y="50" fill="#ffd700" font-size="2.2" opacity="0.85">💐</text>
+      <!-- 抱花的臂 -->
+      <path d="M 44 27 Q 48 40 50 48 L 52 48 Q 50 40 46 27 Z" ${FIGURE_STYLE}/>
+      <path d="M 56 27 Q 60 40 60 48 L 58 48 Q 58 40 54 27 Z" ${FIGURE_STYLE}/>
+    `,
+  },
+  {
+    id: "hand-run",
+    name: "牵手带跑",
+    tip: "她在前牵你手往前跑，第一人称视角拍背影",
+    svg: `
+      <text x="50" y="10" text-anchor="middle" fill="white" font-size="2.2" opacity="0.7">第一人称 · 拍背影</text>
+      <line x1="0" y1="33.3" x2="100" y2="33.3" stroke="#ffd700" stroke-width="0.3" opacity="0.7"/>
+      <!-- 前方的她（背影、跑姿） -->
+      <ellipse cx="58" cy="35" rx="3.2" ry="3.2" ${FIGURE_STYLE}/>
+      <path d="M 53 39 L 63 39 L 61 58 L 55 58 Z" ${FIGURE_STYLE}/>
+      <path d="M 55 58 L 61 58 L 63 70 L 53 70 Z" ${FIGURE_STYLE}/>
+      <!-- 跑姿腿 -->
+      <path d="M 55 70 Q 50 80 46 88 L 44 90 Q 48 78 53 68 Z" ${FIGURE_STYLE}/>
+      <path d="M 61 70 Q 64 80 68 88 L 66 92 Q 62 80 59 68 Z" ${FIGURE_STYLE}/>
+      <!-- 她回伸的手 -->
+      <path d="M 53 40 L 38 60 L 40 62 L 55 42 Z" ${FIGURE_STYLE}/>
+      <!-- 你的手（从画面下方伸出） -->
+      <path d="M 25 95 Q 32 80 38 60 L 36 60 Q 30 80 22 95 Z" fill="rgba(255,215,0,0.2)" stroke="#ffd700" stroke-width="0.5" opacity="0.85"/>
+      <!-- 牵手点 -->
+      <circle cx="38" cy="61" r="1.6" fill="#ffd700"/>
+      <text x="40" y="55" fill="#ffd700" font-size="2.2" opacity="0.85">牵手 ↖</text>
+    `,
+  },
+  {
+    id: "feed",
+    name: "喂食对望",
+    tip: "她递食物到你嘴边，侧拍两人对视瞬间",
+    svg: `
+      <text x="50" y="10" text-anchor="middle" fill="white" font-size="2.2" opacity="0.7">侧拍 · 对视瞬间</text>
+      <line x1="0" y1="33.3" x2="100" y2="33.3" stroke="#ffd700" stroke-width="0.3" opacity="0.7"/>
+      <!-- 她（左） -->
+      <ellipse cx="30" cy="32" rx="8" ry="10" ${FIGURE_STYLE}/>
+      <text x="30" y="50" text-anchor="middle" fill="white" font-size="2" opacity="0.7">她</text>
+      <path d="M 15 58 Q 20 52 30 52 Q 38 52 42 56 L 40 88 L 12 88 Z" ${FIGURE_STYLE}/>
+      <!-- 你（右） -->
+      <ellipse cx="70" cy="32" rx="8" ry="10" ${FIGURE_STYLE} stroke-dasharray="0.8 0.6" opacity="0.7"/>
+      <text x="70" y="50" text-anchor="middle" fill="#ffd700" font-size="2" opacity="0.85">你</text>
+      <path d="M 58 56 Q 62 52 70 52 Q 80 52 85 58 L 88 88 L 60 88 Z" stroke="white" stroke-width="0.3" stroke-dasharray="0.8 0.6" fill="rgba(255,255,255,0.05)" opacity="0.7"/>
+      <!-- 中间的手和食物 -->
+      <path d="M 40 38 Q 50 38 56 36" fill="none" stroke="white" stroke-width="0.4" opacity="0.85" stroke-dasharray="1.4 0.9"/>
+      <circle cx="50" cy="37" r="2" fill="#ffd700" opacity="0.85"/>
+      <text x="50" y="32" text-anchor="middle" fill="#ffd700" font-size="2.4">🍓</text>
+    `,
+  },
 ];
 
 // ============================================================================
