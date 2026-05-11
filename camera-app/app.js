@@ -209,6 +209,164 @@ const GUIDES = [
       <path d="M 35 71 L 35.8 82 L 37.5 82 L 37 71 Z" ${FIGURE_STYLE}/>
     `,
   },
+  // ============== 亲子构图 ==============
+  {
+    id: "duo-hold",
+    name: "亲子·牵手并立",
+    tip: "蹲到孩子眼睛高度拍，全身入镜，两人手牵手在画面中心",
+    svg: `
+      <line x1="33.3" y1="0" x2="33.3" y2="100" stroke="white" stroke-width="0.15" stroke-dasharray="1 1" opacity="0.4"/>
+      <line x1="66.7" y1="0" x2="66.7" y2="100" stroke="white" stroke-width="0.15" stroke-dasharray="1 1" opacity="0.4"/>
+      <line x1="0" y1="33.3" x2="100" y2="33.3" stroke="#ffd700" stroke-width="0.3" opacity="0.7"/>
+      <text x="50" y="10" text-anchor="middle" fill="white" font-size="2.2" opacity="0.7">蹲低拍 ↓ 与孩子同高</text>
+      <!-- 大人 -->
+      <ellipse cx="36" cy="14" rx="3" ry="3" ${FIGURE_STYLE}/>
+      <path d="M 36 17 L 36 19" ${FIGURE_LINE}/>
+      <path d="M 31 19 L 41 19 L 39 42 L 33 42 Z" ${FIGURE_STYLE}/>
+      <path d="M 33 42 L 39 42 L 40 56 L 32 56 Z" ${FIGURE_STYLE}/>
+      <path d="M 34 56 L 33 93 L 31 93 L 31 56 Z" ${FIGURE_STYLE}/>
+      <path d="M 38 56 L 39 93 L 41 93 L 41 56 Z" ${FIGURE_STYLE}/>
+      <path d="M 31 21 L 27 48 L 29 48 L 33 21 Z" ${FIGURE_STYLE}/>
+      <path d="M 41 21 L 45 56 L 47 56 L 43 21 Z" ${FIGURE_STYLE}/>
+      <!-- 孩子（更小，肩在大人腰部） -->
+      <ellipse cx="62" cy="38" rx="2.4" ry="2.4" ${FIGURE_STYLE}/>
+      <path d="M 62 40.4 L 62 42" ${FIGURE_LINE}/>
+      <path d="M 58 42 L 66 42 L 65 60 L 59 60 Z" ${FIGURE_STYLE}/>
+      <path d="M 59 60 L 65 60 L 66 71 L 58 71 Z" ${FIGURE_STYLE}/>
+      <path d="M 60 71 L 59 92 L 57 92 L 57 71 Z" ${FIGURE_STYLE}/>
+      <path d="M 64 71 L 65 92 L 67 92 L 67 71 Z" ${FIGURE_STYLE}/>
+      <path d="M 58 44 L 53 56 L 55 56 L 60 44 Z" ${FIGURE_STYLE}/>
+      <path d="M 66 44 L 70 60 L 72 60 L 68 44 Z" ${FIGURE_STYLE}/>
+      <!-- 牵手交点 -->
+      <circle cx="49" cy="55" r="1.4" fill="#ffd700" opacity="0.85"/>
+      <text x="50" y="51" text-anchor="middle" fill="#ffd700" font-size="2.2">牵手</text>
+    `,
+  },
+  {
+    id: "duo-hug",
+    name: "亲子·蹲抱",
+    tip: "大人蹲到孩子身高，半身构图，捕捉拥抱瞬间和表情",
+    svg: `
+      <line x1="0" y1="33.3" x2="100" y2="33.3" stroke="#ffd700" stroke-width="0.3" opacity="0.7"/>
+      <text x="50" y="10" text-anchor="middle" fill="white" font-size="2.2" opacity="0.7">脸贴脸，眼睛在 1/3 线</text>
+      <!-- 大人（蹲下）头偏左 -->
+      <ellipse cx="40" cy="28" rx="5" ry="5" ${FIGURE_STYLE}/>
+      <path d="M 40 33 L 41 38" ${FIGURE_LINE}/>
+      <path d="M 32 38 L 48 38 L 46 62 L 34 62 Z" ${FIGURE_STYLE}/>
+      <path d="M 34 62 L 46 62 L 50 80 L 30 80 Z" ${FIGURE_STYLE}/>
+      <!-- 蹲下小腿向前折 -->
+      <path d="M 30 80 Q 25 88 22 92 L 20 92 Q 23 86 28 78 Z" ${FIGURE_STYLE}/>
+      <path d="M 50 80 Q 55 88 58 92 L 56 92 Q 51 86 48 78 Z" ${FIGURE_STYLE}/>
+      <!-- 抱孩子的手臂 -->
+      <path d="M 48 40 Q 60 42 68 50" ${FIGURE_LINE} stroke-width="0.5"/>
+      <!-- 孩子（被抱住，更小） -->
+      <ellipse cx="62" cy="32" rx="4" ry="4" ${FIGURE_STYLE}/>
+      <path d="M 62 36 L 62 40" ${FIGURE_LINE}/>
+      <path d="M 56 40 L 68 40 L 67 60 L 57 60 Z" ${FIGURE_STYLE}/>
+      <path d="M 57 60 L 67 60 L 70 75 L 54 75 Z" ${FIGURE_STYLE}/>
+      <!-- 孩子小手搭大人 -->
+      <path d="M 56 42 Q 50 45 45 50" ${FIGURE_LINE} stroke-width="0.4"/>
+    `,
+  },
+  {
+    id: "duo-kiss",
+    name: "亲子·亲额头",
+    tip: "近景特写，大人低头吻孩子额头，光线打侧脸",
+    svg: `
+      <line x1="0" y1="33.3" x2="100" y2="33.3" stroke="#ffd700" stroke-width="0.3" opacity="0.7"/>
+      <text x="50" y="10" text-anchor="middle" fill="white" font-size="2.2" opacity="0.7">两人头部为画面中心</text>
+      <!-- 大人头（顶部偏左，低头） -->
+      <ellipse cx="42" cy="28" rx="11" ry="14" ${FIGURE_STYLE} transform="rotate(-15 42 28)"/>
+      <!-- 大人肩 -->
+      <path d="M 24 60 Q 28 50 42 50 Q 50 50 56 56 L 60 90 L 16 90 Z" ${FIGURE_STYLE}/>
+      <!-- 孩子头（右下，仰头被亲） -->
+      <ellipse cx="58" cy="42" rx="8" ry="10" ${FIGURE_STYLE} transform="rotate(15 58 42)"/>
+      <!-- 接触点 -->
+      <circle cx="50" cy="32" r="1.6" fill="#ffd700" opacity="0.85"/>
+      <text x="50" y="20" text-anchor="middle" fill="#ffd700" font-size="2.2">💋</text>
+      <!-- 孩子肩 -->
+      <path d="M 50 60 Q 55 55 64 56 Q 75 58 80 70 L 84 95 L 50 95 Z" ${FIGURE_STYLE}/>
+    `,
+  },
+  {
+    id: "duo-lift",
+    name: "亲子·举高高",
+    tip: "仰拍，大人把孩子举过头顶，背景找蓝天/天花板",
+    svg: `
+      <text x="50" y="10" text-anchor="middle" fill="white" font-size="2.2" opacity="0.7">仰拍，相机几乎贴地</text>
+      <!-- 孩子（顶部，举高） -->
+      <ellipse cx="50" cy="14" rx="3.5" ry="3.5" ${FIGURE_STYLE}/>
+      <path d="M 44 18 L 56 18 L 55 32 L 45 32 Z" ${FIGURE_STYLE}/>
+      <!-- 孩子手臂张开（飞翔感） -->
+      <path d="M 44 19 L 32 26 L 33 28 L 45 22 Z" ${FIGURE_STYLE}/>
+      <path d="M 56 19 L 68 26 L 67 28 L 55 22 Z" ${FIGURE_STYLE}/>
+      <!-- 孩子腿 -->
+      <path d="M 46 32 L 44 44 L 46 44 L 48 32 Z" ${FIGURE_STYLE}/>
+      <path d="M 54 32 L 56 44 L 54 44 L 52 32 Z" ${FIGURE_STYLE}/>
+      <!-- 大人手臂上举到孩子 -->
+      <path d="M 36 50 L 47 32 L 49 33 L 38 51 Z" ${FIGURE_STYLE}/>
+      <path d="M 64 50 L 53 32 L 51 33 L 62 51 Z" ${FIGURE_STYLE}/>
+      <!-- 大人头 -->
+      <ellipse cx="50" cy="56" rx="4" ry="4" ${FIGURE_STYLE}/>
+      <!-- 大人身体 -->
+      <path d="M 42 60 L 58 60 L 56 88 L 44 88 Z" ${FIGURE_STYLE}/>
+      <path d="M 44 88 L 56 88 L 58 95 L 42 95 Z" ${FIGURE_STYLE}/>
+    `,
+  },
+  {
+    id: "duo-back",
+    name: "亲子·背影牵手",
+    tip: "从两人后方拍，留白在前方，大人比孩子高一头",
+    svg: `
+      <line x1="33.3" y1="0" x2="33.3" y2="100" stroke="white" stroke-width="0.15" stroke-dasharray="1 1" opacity="0.4"/>
+      <line x1="66.7" y1="0" x2="66.7" y2="100" stroke="white" stroke-width="0.15" stroke-dasharray="1 1" opacity="0.4"/>
+      <text x="50" y="10" text-anchor="middle" fill="white" font-size="2.2" opacity="0.7">背影 → 留白在前方</text>
+      <!-- 大人背影 -->
+      <ellipse cx="36" cy="20" rx="3.5" ry="3.5" ${FIGURE_STYLE}/>
+      <path d="M 30 25 L 42 25 L 40 50 L 32 50 Z" ${FIGURE_STYLE}/>
+      <path d="M 32 50 L 40 50 L 41 65 L 31 65 Z" ${FIGURE_STYLE}/>
+      <path d="M 33 65 L 32 95 L 30 95 L 30 65 Z" ${FIGURE_STYLE}/>
+      <path d="M 39 65 L 40 95 L 42 95 L 42 65 Z" ${FIGURE_STYLE}/>
+      <path d="M 30 27 L 26 55 L 28 55 L 32 27 Z" ${FIGURE_STYLE}/>
+      <path d="M 42 27 L 46 65 L 48 65 L 44 27 Z" ${FIGURE_STYLE}/>
+      <!-- 孩子背影（小、矮） -->
+      <ellipse cx="56" cy="42" rx="2.7" ry="2.7" ${FIGURE_STYLE}/>
+      <path d="M 52 46 L 60 46 L 59 62 L 53 62 Z" ${FIGURE_STYLE}/>
+      <path d="M 53 62 L 59 62 L 60 73 L 52 73 Z" ${FIGURE_STYLE}/>
+      <path d="M 54 73 L 53 92 L 51 92 L 51 73 Z" ${FIGURE_STYLE}/>
+      <path d="M 58 73 L 59 92 L 61 92 L 61 73 Z" ${FIGURE_STYLE}/>
+      <path d="M 52 48 L 48 62 L 50 62 L 54 48 Z" ${FIGURE_STYLE}/>
+      <path d="M 60 48 L 63 65 L 65 65 L 62 48 Z" ${FIGURE_STYLE}/>
+      <!-- 牵手 -->
+      <circle cx="46" cy="62" r="1.2" fill="#ffd700" opacity="0.85"/>
+      <circle cx="48" cy="62" r="1.2" fill="#ffd700" opacity="0.85"/>
+    `,
+  },
+  {
+    id: "duo-look",
+    name: "亲子·同看远方",
+    tip: "两人背影并立，大景小人，把镜头放在第三分线",
+    svg: `
+      <line x1="0" y1="33.3" x2="100" y2="33.3" stroke="white" stroke-width="0.2" stroke-dasharray="1.5 1.5" opacity="0.5"/>
+      <line x1="0" y1="66.7" x2="100" y2="66.7" stroke="#ffd700" stroke-width="0.4"/>
+      <line x1="33.3" y1="0" x2="33.3" y2="100" stroke="white" stroke-width="0.15" stroke-dasharray="1 1" opacity="0.4"/>
+      <line x1="66.7" y1="0" x2="66.7" y2="100" stroke="white" stroke-width="0.15" stroke-dasharray="1 1" opacity="0.4"/>
+      <text x="50" y="14" text-anchor="middle" fill="white" font-size="2.2" opacity="0.7">大景 / 远方</text>
+      <!-- 大人小背影 -->
+      <ellipse cx="44" cy="65" rx="2" ry="2" ${FIGURE_STYLE}/>
+      <path d="M 41 67 L 47 67 L 46 80 L 42 80 Z" ${FIGURE_STYLE}/>
+      <path d="M 42.5 80 L 42 92 L 40.5 92 L 41 80 Z" ${FIGURE_STYLE}/>
+      <path d="M 45.5 80 L 46 92 L 47.5 92 L 47 80 Z" ${FIGURE_STYLE}/>
+      <!-- 孩子更小背影 -->
+      <ellipse cx="55" cy="71" rx="1.5" ry="1.5" ${FIGURE_STYLE}/>
+      <path d="M 52.5 73 L 57.5 73 L 57 83 L 53 83 Z" ${FIGURE_STYLE}/>
+      <path d="M 53.5 83 L 53 92 L 51.8 92 L 52.2 83 Z" ${FIGURE_STYLE}/>
+      <path d="M 56.5 83 L 57 92 L 58.2 92 L 57.8 83 Z" ${FIGURE_STYLE}/>
+      <!-- 牵手 -->
+      <circle cx="49" cy="78" r="0.8" fill="#ffd700" opacity="0.85"/>
+      <circle cx="50" cy="78" r="0.8" fill="#ffd700" opacity="0.85"/>
+    `,
+  },
 ];
 
 // ============================================================================
@@ -219,6 +377,7 @@ const startBtn = document.getElementById("start-btn");
 const fallbackBtn = document.getElementById("fallback-btn");
 const captureInput = document.getElementById("capture-input");
 const closeBtn = document.getElementById("close-btn");
+const nativeBtn = document.getElementById("native-btn");
 const switchBtn = document.getElementById("switch-btn");
 const shutterBtn = document.getElementById("shutter-btn");
 const gridBtn = document.getElementById("grid-btn");
@@ -465,6 +624,7 @@ captureInput.addEventListener("change", (e) => {
 startBtn.addEventListener("click", startCamera);
 fallbackBtn.addEventListener("click", fallbackCapture);
 closeBtn.addEventListener("click", closeCamera);
+nativeBtn.addEventListener("click", fallbackCapture);
 switchBtn.addEventListener("click", switchCamera);
 shutterBtn.addEventListener("click", takePhoto);
 gridBtn.addEventListener("click", toggleOverlay);
