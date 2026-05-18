@@ -659,15 +659,25 @@ const GUIDES = [
 const startBtn = document.getElementById("start-btn");
 const fallbackBtn = document.getElementById("fallback-btn");
 const captureInput = document.getElementById("capture-input");
+const referenceBtn = document.getElementById("reference-btn");
+const referenceInput = document.getElementById("reference-input");
+const referencePreview = document.getElementById("reference-preview");
+const referenceThumb = document.getElementById("reference-thumb");
+const referenceName = document.getElementById("reference-name");
+const clearReferenceBtn = document.getElementById("clear-reference-btn");
 const closeBtn = document.getElementById("close-btn");
 const nativeBtn = document.getElementById("native-btn");
 const switchBtn = document.getElementById("switch-btn");
 const shutterBtn = document.getElementById("shutter-btn");
 const gridBtn = document.getElementById("grid-btn");
+const referenceToggleBtn = document.getElementById("reference-toggle-btn");
+const referenceChangeBtn = document.getElementById("reference-change-btn");
+const referenceOpacity = document.getElementById("reference-opacity");
 const retakeBtn = document.getElementById("retake-btn");
 const saveBtn = document.getElementById("save-btn");
 const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
+const referenceOverlay = document.getElementById("reference-overlay");
 const overlay = document.getElementById("overlay");
 const tipEl = document.getElementById("tip");
 const previewImg = document.getElementById("preview-img");
@@ -676,6 +686,7 @@ const cameraScreen = document.getElementById("camera");
 const previewScreen = document.getElementById("preview");
 const errorEl = document.getElementById("error");
 const posesScroll = document.getElementById("poses-scroll");
+const referencePanel = document.getElementById("reference-panel");
 
 // ============================================================================
 // State
@@ -686,6 +697,9 @@ let facingMode = "environment";
 let activeGuideIdx = 0;
 let overlayVisible = true;
 let lastPhotoUrl = null;
+let referencePhotoUrl = null;
+let referenceVisible = true;
+let referenceOpacityValue = 0.38;
 
 // ============================================================================
 // Helpers
@@ -746,6 +760,56 @@ function renderOverlay() {
   const guide = GUIDES[activeGuideIdx];
   overlay.innerHTML = guide.svg;
   tipEl.textContent = guide.tip;
+}
+
+function syncReferenceUI() {
+  const hasReference = Boolean(referencePhotoUrl);
+
+  referencePreview.hidden = !hasReference;
+  referencePanel.hidden = !hasReference;
+  referenceOverlay.hidden = !hasReference || !referenceVisible;
+  referenceToggleBtn.textContent = referenceVisible ? "隐藏同款图" : "显示同款图";
+  referenceOverlay.style.opacity = String(referenceOpacityValue);
+}
+
+function chooseReferenceImage() {
+  referenceInput.click();
+}
+
+function setReferenceImage(file) {
+  if (!file) return;
+  if (!file.type || !file.type.startsWith("image/")) {
+    showError("请选择图片文件作为参考图。");
+    return;
+  }
+
+  if (referencePhotoUrl) URL.revokeObjectURL(referencePhotoUrl);
+  referencePhotoUrl = URL.createObjectURL(file);
+  referenceVisible = true;
+  referenceOverlay.src = referencePhotoUrl;
+  referenceThumb.src = referencePhotoUrl;
+  referenceName.textContent = file.name || "已选择参考图";
+  syncReferenceUI();
+}
+
+function clearReferenceImage() {
+  if (referencePhotoUrl) URL.revokeObjectURL(referencePhotoUrl);
+  referencePhotoUrl = null;
+  referenceVisible = true;
+  referenceOverlay.removeAttribute("src");
+  referenceThumb.removeAttribute("src");
+  referenceName.textContent = "已选择参考图";
+  syncReferenceUI();
+}
+
+function toggleReferenceImage() {
+  referenceVisible = !referenceVisible;
+  syncReferenceUI();
+}
+
+function updateReferenceOpacity() {
+  referenceOpacityValue = Number(referenceOpacity.value) / 100;
+  syncReferenceUI();
 }
 
 // ============================================================================
@@ -816,6 +880,7 @@ async function startCamera() {
     cameraScreen.hidden = false;
     renderPoseChips();
     renderOverlay();
+    syncReferenceUI();
 
     try {
       await withTimeout(video.play(), 5000, "视频播放");
@@ -887,6 +952,12 @@ function fallbackCapture() {
   captureInput.click();
 }
 
+referenceInput.addEventListener("change", (e) => {
+  const file = e.target.files && e.target.files[0];
+  setReferenceImage(file);
+  referenceInput.value = "";
+});
+
 captureInput.addEventListener("change", (e) => {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
@@ -905,6 +976,11 @@ captureInput.addEventListener("change", (e) => {
 // ============================================================================
 
 startBtn.addEventListener("click", startCamera);
+referenceBtn.addEventListener("click", chooseReferenceImage);
+clearReferenceBtn.addEventListener("click", clearReferenceImage);
+referenceToggleBtn.addEventListener("click", toggleReferenceImage);
+referenceChangeBtn.addEventListener("click", chooseReferenceImage);
+referenceOpacity.addEventListener("input", updateReferenceOpacity);
 fallbackBtn.addEventListener("click", fallbackCapture);
 closeBtn.addEventListener("click", closeCamera);
 nativeBtn.addEventListener("click", fallbackCapture);
@@ -923,3 +999,5 @@ retakeBtn.addEventListener("click", () => {
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) stopStream();
 });
+
+syncReferenceUI();
