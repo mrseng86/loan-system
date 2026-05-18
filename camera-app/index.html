@@ -12,14 +12,26 @@
     <section id="home" class="screen">
       <h1>📸 网美拍照辅助</h1>
       <p class="subtitle">叠加构图线和姿势引导，再也不会被嫌弃不会拍</p>
+      <div class="reference-picker">
+        <button id="reference-btn" class="secondary" type="button">选择参考图拍同款</button>
+        <div id="reference-preview" class="reference-preview" hidden>
+          <img id="reference-thumb" alt="参考图预览" />
+          <div class="reference-meta">
+            <strong id="reference-name">已选择参考图</strong>
+            <button id="clear-reference-btn" class="link" type="button">移除</button>
+          </div>
+        </div>
+      </div>
       <button id="start-btn" class="primary big">开启相机</button>
       <p id="error" class="error" hidden></p>
       <p class="hint">实时预览失败？<button type="button" id="fallback-btn" class="link">用系统相机拍</button></p>
+      <input id="reference-input" type="file" accept="image/*" hidden />
       <input id="capture-input" type="file" accept="image/*" capture="environment" hidden />
     </section>
 
     <section id="camera" class="screen camera-screen" hidden>
       <video id="video" autoplay playsinline webkit-playsinline muted></video>
+      <img id="reference-overlay" class="reference-overlay" alt="半透明参考图" hidden />
       <svg id="overlay" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
       <canvas id="canvas" hidden></canvas>
 
@@ -31,6 +43,15 @@
 
       <div class="poses-bar">
         <div class="poses-scroll" id="poses-scroll"></div>
+      </div>
+
+      <div id="reference-panel" class="reference-panel" hidden>
+        <button id="reference-toggle-btn" class="mini-btn" type="button">隐藏同款图</button>
+        <button id="reference-change-btn" class="mini-btn" type="button">换图</button>
+        <label class="opacity-control">
+          <span>透明度</span>
+          <input id="reference-opacity" type="range" min="15" max="80" value="38" />
+        </label>
       </div>
 
       <div class="controls">
