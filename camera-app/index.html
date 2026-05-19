@@ -18,6 +18,7 @@
           <img id="reference-thumb" alt="参考图预览" />
           <div class="reference-meta">
             <strong id="reference-name">已选择参考图</strong>
+            <span id="reference-pose-status" class="reference-pose-status">姿势尚未读取</span>
             <button id="clear-reference-btn" class="link" type="button">移除</button>
           </div>
         </div>
@@ -54,6 +55,11 @@
         </label>
       </div>
 
+      <div id="live-pose-match" class="live-pose-match" hidden>
+        <strong id="live-pose-score">--</strong>
+        <span id="live-pose-tip">读取姿势中...</span>
+      </div>
+
       <div class="controls">
         <button id="switch-btn" class="icon-btn" aria-label="切换摄像头">⟳</button>
         <button id="shutter-btn" class="shutter" aria-label="拍照"></button>
@@ -63,6 +69,24 @@
 
     <section id="preview" class="screen preview-screen" hidden>
       <img id="preview-img" alt="预览" />
+      <div id="score-panel" class="score-panel" hidden>
+        <div class="score-head">
+          <div>
+            <p class="score-label">AI 拍照评分</p>
+            <p id="score-summary" class="score-summary">正在分析这张照片...</p>
+          </div>
+          <strong id="score-value" class="score-value">--</strong>
+        </div>
+        <div id="score-metrics" class="score-metrics"></div>
+        <div id="pose-score-panel" class="pose-score-panel" hidden>
+          <div>
+            <span class="pose-score-label">同款姿势匹配</span>
+            <strong id="pose-score-value">--</strong>
+          </div>
+          <p id="pose-score-tip">先选择参考图，再拍照匹配姿势。</p>
+        </div>
+        <ul id="score-tips" class="score-tips"></ul>
+      </div>
       <div class="preview-controls">
         <button id="retake-btn">重拍</button>
         <a id="save-btn" class="primary" download="photo.jpg">保存</a>
@@ -70,6 +94,11 @@
     </section>
   </main>
 
-  <script src="app.js?v=10"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-cpu"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+  <script src="app.js?v=11"></script>
 </body>
 </html>

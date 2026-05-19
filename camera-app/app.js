@@ -664,6 +664,7 @@ const referenceInput = document.getElementById("reference-input");
 const referencePreview = document.getElementById("reference-preview");
 const referenceThumb = document.getElementById("reference-thumb");
 const referenceName = document.getElementById("reference-name");
+const referencePoseStatus = document.getElementById("reference-pose-status");
 const clearReferenceBtn = document.getElementById("clear-reference-btn");
 const closeBtn = document.getElementById("close-btn");
 const nativeBtn = document.getElementById("native-btn");
@@ -673,6 +674,9 @@ const gridBtn = document.getElementById("grid-btn");
 const referenceToggleBtn = document.getElementById("reference-toggle-btn");
 const referenceChangeBtn = document.getElementById("reference-change-btn");
 const referenceOpacity = document.getElementById("reference-opacity");
+const livePoseMatch = document.getElementById("live-pose-match");
+const livePoseScore = document.getElementById("live-pose-score");
+const livePoseTip = document.getElementById("live-pose-tip");
 const retakeBtn = document.getElementById("retake-btn");
 const saveBtn = document.getElementById("save-btn");
 const video = document.getElementById("video");
@@ -681,6 +685,14 @@ const referenceOverlay = document.getElementById("reference-overlay");
 const overlay = document.getElementById("overlay");
 const tipEl = document.getElementById("tip");
 const previewImg = document.getElementById("preview-img");
+const scorePanel = document.getElementById("score-panel");
+const scoreValue = document.getElementById("score-value");
+const scoreSummary = document.getElementById("score-summary");
+const scoreMetrics = document.getElementById("score-metrics");
+const scoreTips = document.getElementById("score-tips");
+const poseScorePanel = document.getElementById("pose-score-panel");
+const poseScoreValue = document.getElementById("pose-score-value");
+const poseScoreTip = document.getElementById("pose-score-tip");
 const homeScreen = document.getElementById("home");
 const cameraScreen = document.getElementById("camera");
 const previewScreen = document.getElementById("preview");
@@ -700,6 +712,11 @@ let lastPhotoUrl = null;
 let referencePhotoUrl = null;
 let referenceVisible = true;
 let referenceOpacityValue = 0.38;
+let poseDetector = null;
+let poseDetectorPromise = null;
+let referencePose = null;
+let livePoseTimer = null;
+let livePoseBusy = false;
 
 // ============================================================================
 // Helpers
@@ -730,6 +747,7 @@ function showError(msg) {
 }
 
 function stopStream() {
+  stopLivePoseMatching();
   if (stream) {
     stream.getTracks().forEach((t) => t.stop());
     stream = null;
@@ -770,6 +788,7 @@ function syncReferenceUI() {
   referenceOverlay.hidden = !hasReference || !referenceVisible;
   referenceToggleBtn.textContent = referenceVisible ? "隐藏同款图" : "显示同款图";
   referenceOverlay.style.opacity = String(referenceOpacityValue);
+  livePoseMatch.hidden = !hasReference || !referencePose || cameraScreen.hidden;
 }
 
 function chooseReferenceImage() {
@@ -789,16 +808,23 @@ function setReferenceImage(file) {
   referenceOverlay.src = referencePhotoUrl;
   referenceThumb.src = referencePhotoUrl;
   referenceName.textContent = file.name || "已选择参考图";
+  referencePose = null;
+  referencePoseStatus.textContent = "正在读取参考姿势...";
+  resetPoseScore();
   syncReferenceUI();
+  detectReferencePose(referencePhotoUrl);
 }
 
 function clearReferenceImage() {
   if (referencePhotoUrl) URL.revokeObjectURL(referencePhotoUrl);
   referencePhotoUrl = null;
+  referencePose = null;
   referenceVisible = true;
   referenceOverlay.removeAttribute("src");
   referenceThumb.removeAttribute("src");
   referenceName.textContent = "已选择参考图";
+  referencePoseStatus.textContent = "姿势尚未读取";
+  resetPoseScore();
   syncReferenceUI();
 }
 
@@ -810,6 +836,589 @@ function toggleReferenceImage() {
 function updateReferenceOpacity() {
   referenceOpacityValue = Number(referenceOpacity.value) / 100;
   syncReferenceUI();
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function resetScorePanel() {
+  scorePanel.hidden = true;
+  scoreValue.textContent = "--";
+  scoreSummary.textContent = "正在分析这张照片...";
+  scoreMetrics.innerHTML = "";
+  scoreTips.innerHTML = "";
+  resetPoseScore();
+}
+
+function buildMetric(label, value) {
+  return `
+    <div class="score-metric">
+      <strong>${value}</strong>
+      <span>${label}</span>
+    </div>
+  `;
+}
+
+function renderScore(analysis) {
+  scorePanel.hidden = false;
+  scoreValue.textContent = String(analysis.score);
+  scoreSummary.textContent = analysis.summary;
+  scoreMetrics.innerHTML = [
+    buildMetric("清晰度", analysis.metrics.sharpness),
+    buildMetric("亮度", analysis.metrics.brightness),
+    buildMetric("曝光", analysis.metrics.exposure),
+    buildMetric("构图", analysis.metrics.framing),
+  ].join("");
+  scoreTips.innerHTML = analysis.tips.map((tip) => `<li>${tip}</li>`).join("");
+}
+
+function grade(score) {
+  if (score >= 85) return "很好";
+  if (score >= 72) return "不错";
+  if (score >= 58) return "一般";
+  return "需调整";
+}
+
+function analyzeCanvas(sourceCanvas) {
+  const sampleW = 180;
+  const sampleH = Math.max(1, Math.round((sourceCanvas.height / sourceCanvas.width) * sampleW));
+  const sampleCanvas = document.createElement("canvas");
+  sampleCanvas.width = sampleW;
+  sampleCanvas.height = sampleH;
+  const sampleCtx = sampleCanvas.getContext("2d", { willReadFrequently: true });
+  sampleCtx.drawImage(sourceCanvas, 0, 0, sampleW, sampleH);
+
+  const pixels = sampleCtx.getImageData(0, 0, sampleW, sampleH).data;
+  const luminance = new Float32Array(sampleW * sampleH);
+  let totalLum = 0;
+  let darkCount = 0;
+  let brightCount = 0;
+
+  for (let i = 0, p = 0; i < pixels.length; i += 4, p += 1) {
+    const y = pixels[i] * 0.299 + pixels[i + 1] * 0.587 + pixels[i + 2] * 0.114;
+    luminance[p] = y;
+    totalLum += y;
+    if (y < 42) darkCount += 1;
+    if (y > 242) brightCount += 1;
+  }
+
+  const count = sampleW * sampleH;
+  const avgLum = totalLum / count;
+  const darkRatio = darkCount / count;
+  const brightRatio = brightCount / count;
+
+  let lapTotal = 0;
+  let lapSqTotal = 0;
+  let gradTotal = 0;
+  let weightedX = 0;
+  let weightedY = 0;
+  let weightTotal = 0;
+  let edgeCount = 0;
+  let minX = sampleW;
+  let maxX = 0;
+  let minY = sampleH;
+  let maxY = 0;
+
+  for (let y = 1; y < sampleH - 1; y += 1) {
+    for (let x = 1; x < sampleW - 1; x += 1) {
+      const idx = y * sampleW + x;
+      const center = luminance[idx];
+      const left = luminance[idx - 1];
+      const right = luminance[idx + 1];
+      const top = luminance[idx - sampleW];
+      const bottom = luminance[idx + sampleW];
+      const lap = -4 * center + left + right + top + bottom;
+      const grad = Math.abs(right - left) + Math.abs(bottom - top);
+
+      lapTotal += lap;
+      lapSqTotal += lap * lap;
+      gradTotal += grad;
+
+      if (grad > 34) {
+        const centerBias = 1.15 - Math.min(0.65, Math.abs(x / sampleW - 0.5) + Math.abs(y / sampleH - 0.48));
+        const weight = grad * centerBias;
+        weightedX += x * weight;
+        weightedY += y * weight;
+        weightTotal += weight;
+        edgeCount += 1;
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y);
+      }
+    }
+  }
+
+  const innerCount = Math.max(1, (sampleW - 2) * (sampleH - 2));
+  const lapMean = lapTotal / innerCount;
+  const lapVariance = lapSqTotal / innerCount - lapMean * lapMean;
+  const avgGradient = gradTotal / innerCount;
+  const sharpnessScore = clamp(Math.round((lapVariance - 20) / 360 * 100), 0, 100);
+  const brightnessScore = clamp(Math.round(100 - Math.abs(avgLum - 132) * 0.72), 0, 100);
+  const exposureScore = clamp(
+    Math.round(100 - darkRatio * 175 - brightRatio * 220 - Math.max(0, Math.abs(avgLum - 132) - 32) * 0.45),
+    0,
+    100
+  );
+
+  let framingScore = 66;
+  let subjectCx = 0.5;
+  let subjectCy = 0.5;
+  let headroom = 0.12;
+  if (weightTotal > 0 && edgeCount > count * 0.012) {
+    subjectCx = weightedX / weightTotal / sampleW;
+    subjectCy = weightedY / weightTotal / sampleH;
+    const subjectHeight = Math.max(1, maxY - minY) / sampleH;
+    headroom = minY / sampleH;
+    const centerPenalty = Math.abs(subjectCx - 0.5) * 95 + Math.abs(subjectCy - 0.48) * 70;
+    const sizePenalty = subjectHeight < 0.32 ? (0.32 - subjectHeight) * 90 : subjectHeight > 0.88 ? (subjectHeight - 0.88) * 80 : 0;
+    const headPenalty = headroom > 0.22 ? (headroom - 0.22) * 120 : headroom < 0.035 ? (0.035 - headroom) * 120 : 0;
+    framingScore = clamp(Math.round(100 - centerPenalty - sizePenalty - headPenalty), 0, 100);
+  }
+
+  const score = clamp(
+    Math.round(sharpnessScore * 0.3 + brightnessScore * 0.22 + exposureScore * 0.26 + framingScore * 0.22),
+    0,
+    100
+  );
+
+  const tips = makePhotoTips({
+    avgLum,
+    darkRatio,
+    brightRatio,
+    sharpnessScore,
+    exposureScore,
+    framingScore,
+    subjectCx,
+    subjectCy,
+    headroom,
+    avgGradient,
+  });
+
+  return {
+    score,
+    summary: score >= 82 ? "这张很有氛围，可以直接用。" : score >= 68 ? "整体不错，微调一下会更稳。" : "这张有进步空间，按提示再拍一张。",
+    tips,
+    metrics: {
+      sharpness: grade(sharpnessScore),
+      brightness: grade(brightnessScore),
+      exposure: grade(exposureScore),
+      framing: grade(framingScore),
+    },
+  };
+}
+
+function makePhotoTips(stats) {
+  const tips = [];
+
+  if (stats.sharpnessScore < 48 && stats.avgGradient < 18) {
+    tips.push("画面有点糊，手机拿稳后再按快门");
+  }
+  if (stats.darkRatio > 0.32 || stats.avgLum < 92) {
+    tips.push("光线太暗，靠近窗边或补一点光");
+  } else if (stats.brightRatio > 0.11 || stats.avgLum > 178) {
+    tips.push("高光太亮，避开直射光再拍");
+  } else if (stats.brightnessScore < 70) {
+    tips.push("亮度再调均匀一点，脸部会更干净");
+  }
+
+  if (stats.headroom > 0.24) {
+    tips.push("头顶留白太多，镜头再低一点");
+  } else if (stats.subjectCy > 0.58) {
+    tips.push("人物偏低，镜头再低一点会显腿长");
+  } else if (stats.subjectCy < 0.36) {
+    tips.push("人物偏高，手机稍微往下压一点");
+  } else if (stats.subjectCx < 0.4) {
+    tips.push("人物偏左，往中间或三分线挪一点");
+  } else if (stats.subjectCx > 0.6) {
+    tips.push("人物偏右，往中间或三分线挪一点");
+  } else if (stats.framingScore < 72) {
+    tips.push("人物再靠近中心线，构图会更稳");
+  }
+
+  if (stats.exposureScore < 65 && !tips.some((tip) => tip.includes("光") || tip.includes("亮"))) {
+    tips.push("曝光不太稳，点一下脸部再拍");
+  }
+  tips.push("下巴微收，肩膀放松，表情会更自然");
+  tips.push("连拍两三张，选眼神最稳的一张");
+
+  const uniqueTips = [...new Set(tips)];
+  const defaultTips = [
+    "眼睛看向镜头上方一点点",
+    "身体微侧，画面会更显瘦",
+    "背景保持干净，人物会更突出",
+  ];
+  defaultTips.forEach((tip) => {
+    if (uniqueTips.length < 3 && !uniqueTips.includes(tip)) uniqueTips.push(tip);
+  });
+
+  return uniqueTips.slice(0, 3);
+}
+
+function analyzeImageUrl(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const analysisCanvas = document.createElement("canvas");
+      analysisCanvas.width = img.naturalWidth || img.width;
+      analysisCanvas.height = img.naturalHeight || img.height;
+      const analysisCtx = analysisCanvas.getContext("2d");
+      analysisCtx.drawImage(img, 0, 0, analysisCanvas.width, analysisCanvas.height);
+      resolve(analyzeCanvas(analysisCanvas));
+    };
+    img.onerror = () => reject(new Error("照片分析失败"));
+    img.src = url;
+  });
+}
+
+function resetPoseScore() {
+  poseScorePanel.hidden = true;
+  poseScoreValue.textContent = "--";
+  poseScoreTip.textContent = referencePose ? "拍照后自动匹配参考姿势。" : "先选择参考图，再拍照匹配姿势。";
+  livePoseScore.textContent = "--";
+  livePoseTip.textContent = referencePose ? "读取你的姿势中..." : "先选择一张参考图";
+  livePoseMatch.hidden = true;
+}
+
+async function getPoseDetector() {
+  if (poseDetector) return poseDetector;
+  if (poseDetectorPromise) return poseDetectorPromise;
+
+  poseDetectorPromise = (async () => {
+    if (!window.tf || !window.poseDetection) {
+      throw new Error("姿势模型还没加载完成，请稍后再试。");
+    }
+    try {
+      await tf.setBackend("webgl");
+    } catch (err) {
+      await tf.setBackend("cpu");
+    }
+    await tf.ready();
+    const model = poseDetection.SupportedModels.MoveNet;
+    const detector = await poseDetection.createDetector(model, {
+      modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
+      enableSmoothing: true,
+    });
+    poseDetector = detector;
+    return detector;
+  })();
+
+  try {
+    return await poseDetectorPromise;
+  } catch (err) {
+    poseDetectorPromise = null;
+    throw err;
+  }
+}
+
+function loadImage(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("图片读取失败"));
+    img.src = url;
+  });
+}
+
+async function estimatePose(source) {
+  const detector = await getPoseDetector();
+  const poses = await detector.estimatePoses(source, {
+    maxPoses: 1,
+    flipHorizontal: false,
+  });
+  const pose = poses && poses[0];
+  if (!pose || !pose.keypoints) return null;
+  const confident = pose.keypoints.filter((p) => (p.score || 0) >= 0.28);
+  return confident.length >= 6 ? pose.keypoints : null;
+}
+
+async function detectReferencePose(url) {
+  try {
+    const img = await loadImage(url);
+    referencePose = await estimatePose(img);
+    referencePoseStatus.textContent = referencePose ? "参考姿势已读取" : "没识别到完整人物姿势";
+  } catch (err) {
+    referencePose = null;
+    referencePoseStatus.textContent = "姿势模型加载失败，可继续用透明图";
+  }
+  syncReferenceUI();
+  updateLivePoseMatch();
+}
+
+function keypointMap(keypoints) {
+  const map = {};
+  keypoints.forEach((point) => {
+    if (point && point.name && (point.score || 0) >= 0.25) {
+      map[point.name] = {
+        x: point.x,
+        y: point.y,
+        score: point.score || 0,
+      };
+    }
+  });
+  return map;
+}
+
+function normalizedPose(keypoints, mirror) {
+  const map = keypointMap(keypoints);
+  const names = Object.keys(map);
+  if (names.length < 6) return null;
+
+  const shoulderMid = midpoint(map.left_shoulder, map.right_shoulder);
+  const hipMid = midpoint(map.left_hip, map.right_hip);
+  let center = midpoint(shoulderMid, hipMid);
+  if (!center) {
+    const avg = names.reduce((acc, name) => {
+      acc.x += map[name].x;
+      acc.y += map[name].y;
+      return acc;
+    }, { x: 0, y: 0 });
+    center = { x: avg.x / names.length, y: avg.y / names.length };
+  }
+
+  const shoulderWidth = distance(map.left_shoulder, map.right_shoulder);
+  const torsoLength = distance(shoulderMid, hipMid);
+  const scale = Math.max(shoulderWidth || 0, torsoLength || 0, 60);
+  const normalized = {};
+
+  names.forEach((name) => {
+    const point = map[name];
+    const mirrorName = mirror ? swapSideName(name) : name;
+    normalized[mirrorName] = {
+      x: (mirror ? -1 : 1) * ((point.x - center.x) / scale),
+      y: (point.y - center.y) / scale,
+      score: point.score,
+    };
+  });
+
+  return normalized;
+}
+
+function swapSideName(name) {
+  if (name.startsWith("left_")) return name.replace("left_", "right_");
+  if (name.startsWith("right_")) return name.replace("right_", "left_");
+  return name;
+}
+
+function midpoint(a, b) {
+  if (!a || !b) return a || b || null;
+  return {
+    x: (a.x + b.x) / 2,
+    y: (a.y + b.y) / 2,
+  };
+}
+
+function distance(a, b) {
+  if (!a || !b) return 0;
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function angle(a, b, c) {
+  if (!a || !b || !c) return null;
+  const abx = a.x - b.x;
+  const aby = a.y - b.y;
+  const cbx = c.x - b.x;
+  const cby = c.y - b.y;
+  const denom = Math.hypot(abx, aby) * Math.hypot(cbx, cby);
+  if (!denom) return null;
+  const cos = clamp((abx * cbx + aby * cby) / denom, -1, 1);
+  return Math.acos(cos) * 180 / Math.PI;
+}
+
+function poseAngles(pose) {
+  return {
+    left_elbow: angle(pose.left_shoulder, pose.left_elbow, pose.left_wrist),
+    right_elbow: angle(pose.right_shoulder, pose.right_elbow, pose.right_wrist),
+    left_shoulder: angle(pose.left_elbow, pose.left_shoulder, pose.left_hip),
+    right_shoulder: angle(pose.right_elbow, pose.right_shoulder, pose.right_hip),
+    left_knee: angle(pose.left_hip, pose.left_knee, pose.left_ankle),
+    right_knee: angle(pose.right_hip, pose.right_knee, pose.right_ankle),
+    torso: angle(pose.left_shoulder, pose.right_shoulder, pose.right_hip),
+  };
+}
+
+function comparePoses(referenceKeypoints, userKeypoints) {
+  const ref = normalizedPose(referenceKeypoints, false);
+  const user = normalizedPose(userKeypoints, false);
+  const mirroredUser = normalizedPose(userKeypoints, true);
+  if (!ref || !user) return null;
+
+  const normal = compareNormalizedPoses(ref, user);
+  const mirrored = mirroredUser ? compareNormalizedPoses(ref, mirroredUser) : null;
+  return mirrored && mirrored.score > normal.score ? mirrored : normal;
+}
+
+function compareNormalizedPoses(ref, user) {
+  const compareNames = [
+    "nose",
+    "left_shoulder",
+    "right_shoulder",
+    "left_elbow",
+    "right_elbow",
+    "left_wrist",
+    "right_wrist",
+    "left_hip",
+    "right_hip",
+    "left_knee",
+    "right_knee",
+    "left_ankle",
+    "right_ankle",
+  ];
+
+  let positionPenalty = 0;
+  let positionCount = 0;
+  compareNames.forEach((name) => {
+    if (ref[name] && user[name]) {
+      const d = Math.hypot(ref[name].x - user[name].x, ref[name].y - user[name].y);
+      positionPenalty += clamp(d / 0.72, 0, 1);
+      positionCount += 1;
+    }
+  });
+
+  const refAngles = poseAngles(ref);
+  const userAngles = poseAngles(user);
+  let anglePenalty = 0;
+  let angleCount = 0;
+  Object.keys(refAngles).forEach((name) => {
+    if (refAngles[name] !== null && userAngles[name] !== null) {
+      anglePenalty += clamp(Math.abs(refAngles[name] - userAngles[name]) / 65, 0, 1);
+      angleCount += 1;
+    }
+  });
+
+  const posScore = positionCount ? 100 - (positionPenalty / positionCount) * 100 : 50;
+  const angleScore = angleCount ? 100 - (anglePenalty / angleCount) * 100 : 50;
+  const score = clamp(Math.round(posScore * 0.46 + angleScore * 0.54), 0, 100);
+
+  return {
+    score,
+    tip: makePoseTip(ref, user, score),
+  };
+}
+
+function makePoseTip(ref, user, score) {
+  if (score >= 86) return "姿势很接近，可以直接拍。";
+
+  const refShoulderTilt = shoulderTilt(ref);
+  const userShoulderTilt = shoulderTilt(user);
+  if (Math.abs(refShoulderTilt - userShoulderTilt) > 0.16) return "肩膀再转一点";
+
+  const refWristY = averageVisibleY(ref.left_wrist, ref.right_wrist);
+  const userWristY = averageVisibleY(user.left_wrist, user.right_wrist);
+  if (refWristY !== null && userWristY !== null && userWristY - refWristY > 0.28) return "手臂再抬高一点";
+
+  const refHipX = averageVisibleX(ref.left_hip, ref.right_hip);
+  const userHipX = averageVisibleX(user.left_hip, user.right_hip);
+  if (refHipX !== null && userHipX !== null && userHipX - refHipX < -0.18) return "身体重心往右";
+  if (refHipX !== null && userHipX !== null && userHipX - refHipX > 0.18) return "身体重心往左";
+
+  const refNose = ref.nose;
+  const userNose = user.nose;
+  const refShouldersY = averageVisibleY(ref.left_shoulder, ref.right_shoulder);
+  const userShouldersY = averageVisibleY(user.left_shoulder, user.right_shoulder);
+  if (refNose && userNose && refShouldersY !== null && userShouldersY !== null) {
+    const refHead = refShouldersY - refNose.y;
+    const userHead = userShouldersY - userNose.y;
+    if (userHead - refHead > 0.18) return "下巴微收";
+  }
+
+  return "身体线条再贴近参考图一点";
+}
+
+function shoulderTilt(pose) {
+  if (!pose.left_shoulder || !pose.right_shoulder) return 0;
+  return pose.left_shoulder.y - pose.right_shoulder.y;
+}
+
+function averageVisibleY(a, b) {
+  if (a && b) return (a.y + b.y) / 2;
+  if (a) return a.y;
+  if (b) return b.y;
+  return null;
+}
+
+function averageVisibleX(a, b) {
+  if (a && b) return (a.x + b.x) / 2;
+  if (a) return a.x;
+  if (b) return b.x;
+  return null;
+}
+
+function renderPoseMatch(match) {
+  if (!match) {
+    poseScorePanel.hidden = false;
+    poseScoreValue.textContent = "--";
+    poseScoreTip.textContent = referencePose ? "没识别到完整人物姿势，请让身体多一点入镜。" : "先选择参考图，再拍照匹配姿势。";
+    return;
+  }
+
+  poseScorePanel.hidden = false;
+  poseScoreValue.textContent = String(match.score);
+  poseScoreTip.textContent = match.tip;
+}
+
+async function matchCapturedPose(source) {
+  if (!referencePose) {
+    resetPoseScore();
+    return null;
+  }
+
+  try {
+    poseScorePanel.hidden = false;
+    poseScoreValue.textContent = "--";
+    poseScoreTip.textContent = "正在匹配同款姿势...";
+    const userPose = await estimatePose(source);
+    const match = userPose ? comparePoses(referencePose, userPose) : null;
+    renderPoseMatch(match);
+    return match;
+  } catch (err) {
+    poseScorePanel.hidden = false;
+    poseScoreValue.textContent = "--";
+    poseScoreTip.textContent = "姿势匹配暂时不可用，但照片评分仍可使用。";
+    return null;
+  }
+}
+
+function startLivePoseMatching() {
+  stopLivePoseMatching();
+  updateLivePoseMatch();
+  livePoseTimer = setInterval(updateLivePoseMatch, 1600);
+}
+
+function stopLivePoseMatching() {
+  if (livePoseTimer) {
+    clearInterval(livePoseTimer);
+    livePoseTimer = null;
+  }
+  livePoseBusy = false;
+  livePoseMatch.hidden = true;
+}
+
+async function updateLivePoseMatch() {
+  if (!referencePose || cameraScreen.hidden || !stream || livePoseBusy || !video.videoWidth) {
+    livePoseMatch.hidden = !referencePose || cameraScreen.hidden;
+    return;
+  }
+
+  livePoseBusy = true;
+  livePoseMatch.hidden = false;
+  try {
+    const userPose = await estimatePose(video);
+    const match = userPose ? comparePoses(referencePose, userPose) : null;
+    if (match) {
+      livePoseScore.textContent = String(match.score);
+      livePoseTip.textContent = match.tip;
+    } else {
+      livePoseScore.textContent = "--";
+      livePoseTip.textContent = "让身体多一点入镜";
+    }
+  } catch (err) {
+    livePoseScore.textContent = "--";
+    livePoseTip.textContent = "姿势模型加载中...";
+  } finally {
+    livePoseBusy = false;
+  }
 }
 
 // ============================================================================
@@ -884,6 +1493,7 @@ async function startCamera() {
 
     try {
       await withTimeout(video.play(), 5000, "视频播放");
+      startLivePoseMatching();
     } catch (err) {
       showError("视频播放失败：" + (err.message || err.name));
     }
@@ -910,11 +1520,14 @@ function takePhoto() {
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext("2d");
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   if (facingMode === "user") {
     ctx.translate(w, 0);
     ctx.scale(-1, 1);
   }
   ctx.drawImage(video, 0, 0, w, h);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const analysis = analyzeCanvas(canvas);
   canvas.toBlob(
     (blob) => {
       if (lastPhotoUrl) URL.revokeObjectURL(lastPhotoUrl);
@@ -922,6 +1535,8 @@ function takePhoto() {
       previewImg.src = lastPhotoUrl;
       saveBtn.href = lastPhotoUrl;
       saveBtn.download = `photo-${Date.now()}.jpg`;
+      renderScore(analysis);
+      matchCapturedPose(canvas);
       cameraScreen.hidden = true;
       previewScreen.hidden = false;
     },
@@ -958,7 +1573,7 @@ referenceInput.addEventListener("change", (e) => {
   referenceInput.value = "";
 });
 
-captureInput.addEventListener("change", (e) => {
+captureInput.addEventListener("change", async (e) => {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
   if (lastPhotoUrl) URL.revokeObjectURL(lastPhotoUrl);
@@ -966,6 +1581,18 @@ captureInput.addEventListener("change", (e) => {
   previewImg.src = lastPhotoUrl;
   saveBtn.href = lastPhotoUrl;
   saveBtn.download = file.name || `photo-${Date.now()}.jpg`;
+  resetScorePanel();
+  try {
+    renderScore(await analyzeImageUrl(lastPhotoUrl));
+    await matchCapturedPose(await loadImage(lastPhotoUrl));
+  } catch (err) {
+    scorePanel.hidden = false;
+    scoreValue.textContent = "--";
+    scoreSummary.textContent = "这张照片暂时无法自动评分，但仍然可以保存。";
+    scoreMetrics.innerHTML = "";
+    scoreTips.innerHTML = "<li>换一张照片或重新拍一次</li><li>保持光线稳定</li><li>人物放在画面中心附近</li>";
+    await matchCapturedPose(await loadImage(lastPhotoUrl)).catch(() => null);
+  }
   homeScreen.hidden = true;
   previewScreen.hidden = false;
   captureInput.value = "";
@@ -989,6 +1616,7 @@ shutterBtn.addEventListener("click", takePhoto);
 gridBtn.addEventListener("click", toggleOverlay);
 retakeBtn.addEventListener("click", () => {
   previewScreen.hidden = true;
+  resetScorePanel();
   if (stream) {
     cameraScreen.hidden = false;
   } else {
